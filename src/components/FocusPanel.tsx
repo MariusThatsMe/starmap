@@ -1,10 +1,54 @@
+import { useMemo } from 'react';
 import type { ProjectedStar } from '../types';
 import { formatCatalogIds, formatDistanceLy } from '../utils/star-visuals';
 import { useStarMapStore } from '../state/useStarMapStore';
+import { findNearestStarsWithDistances } from '../math/nearest-neighbors';
 
 type Props = {
   projected: ProjectedStar | null;
 };
+
+function NearestToFocusList() {
+  const focusStar = useStarMapStore((s) => s.focusStar);
+  const catalog = useStarMapStore((s) => s.catalog);
+  const count = useStarMapStore((s) => s.hoverNearestLineCount);
+  const setSelectedStarId = useStarMapStore((s) => s.setSelectedStarId);
+  const selectedStarId = useStarMapStore((s) => s.selectedStarId);
+
+  const neighbors = useMemo(
+    () => findNearestStarsWithDistances(catalog, focusStar, count),
+    [catalog, focusStar, count],
+  );
+
+  if (neighbors.length === 0) return null;
+
+  return (
+    <section className="mb-3 border-b border-slate-700 pb-3">
+      <h3 className="text-slate-200 font-medium text-xs mb-2">
+        Nearest to {focusStar.name}
+      </h3>
+      <ol className="space-y-1 text-xs">
+        {neighbors.map(({ star, distanceLy }, i) => (
+          <li key={star.id}>
+            <button
+              type="button"
+              onClick={() => setSelectedStarId(star.id)}
+              className={`w-full rounded px-2 py-1 text-left flex justify-between gap-2 hover:bg-slate-800 ${
+                selectedStarId === star.id ? 'bg-slate-800 ring-1 ring-sky-600' : ''
+              }`}
+            >
+              <span className="text-slate-300 truncate">
+                <span className="text-slate-500 mr-1.5">{i + 1}.</span>
+                {star.name}
+              </span>
+              <span className="text-slate-500 shrink-0">{formatDistanceLy(distanceLy)}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 export function FocusPanel({ projected }: Props) {
   const focusStar = useStarMapStore((s) => s.focusStar);
@@ -14,27 +58,85 @@ export function FocusPanel({ projected }: Props) {
   const focusHistory = useStarMapStore((s) => s.focusHistory);
   const catalogLimited = useStarMapStore((s) => s.catalogLimited);
 
-  if (!projected) {
-    return (
-      <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-4 text-sm text-slate-300">
-        <h2 className="text-base font-semibold text-white mb-2">Focus: {focusStar.name}</h2>
-        <p className="text-slate-400 text-xs">Click a star to see details.</p>
-        {catalogLimited && (
-          <p className="mt-2 text-amber-400/90 text-xs">
-            Refocus results are limited to the currently loaded catalog.
-          </p>
-        )}
-      </div>
-    );
-  }
+  return (
+    <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-4 text-sm text-slate-300 max-h-[70vh] overflow-y-auto">
+      <h2 className="text-base font-semibold text-white mb-1">Focus: {focusStar.name}</h2>
+      {focusStar.altNames && focusStar.altNames.length > 0 && (
+        <p className="text-xs text-slate-400 mb-2">{focusStar.altNames.join(' · ')}</p>
+      )}
 
+      <NearestToFocusList />
+
+      {!projected ? (
+        <>
+          <p className="text-slate-400 text-xs">Click a star to see details.</p>
+          {focusStar.id !== 'sol' && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              <button
+                type="button"
+                onClick={returnToSol}
+                className="rounded bg-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-600"
+              >
+                Return to Sol
+              </button>
+              {focusHistory.length > 0 && (
+                <button
+                  type="button"
+                  onClick={goBackInHistory}
+                  className="rounded bg-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-600"
+                >
+                  ← Back
+                </button>
+              )}
+            </div>
+          )}
+          {catalogLimited && (
+            <p className="mt-3 text-amber-400/90 text-xs border-t border-slate-700 pt-2">
+              Refocus results are limited to the currently loaded catalog.
+            </p>
+          )}
+        </>
+      ) : (
+        <SelectedStarDetails
+          projected={projected}
+          focusStar={focusStar}
+          focusOnStar={focusOnStar}
+          returnToSol={returnToSol}
+          goBackInHistory={goBackInHistory}
+          focusHistory={focusHistory}
+          catalogLimited={catalogLimited}
+        />
+      )}
+    </div>
+  );
+}
+
+function SelectedStarDetails({
+  projected,
+  focusStar,
+  focusOnStar,
+  returnToSol,
+  goBackInHistory,
+  focusHistory,
+  catalogLimited,
+}: {
+  projected: ProjectedStar;
+  focusStar: ReturnType<typeof useStarMapStore.getState>['focusStar'];
+  focusOnStar: (id: string) => void;
+  returnToSol: () => void;
+  goBackInHistory: () => void;
+  focusHistory: string[];
+  catalogLimited: boolean;
+}) {
   const { star, trueDistanceLy, horizontalDistanceLy, heightLy } = projected;
   const stretch =
     horizontalDistanceLy > 1e-6 ? trueDistanceLy / horizontalDistanceLy : undefined;
 
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-4 text-sm text-slate-300 max-h-[70vh] overflow-y-auto">
-      <h2 className="text-base font-semibold text-white mb-1">{star.name}</h2>
+    <>
+      <h3 className="text-sm font-semibold text-white mb-1 border-t border-slate-700 pt-3">
+        Selected: {star.name}
+      </h3>
       {star.altNames && star.altNames.length > 0 && (
         <p className="text-xs text-slate-400 mb-2">{star.altNames.join(' · ')}</p>
       )}
@@ -117,6 +219,6 @@ export function FocusPanel({ projected }: Props) {
           Refocus results are limited to the currently loaded catalog.
         </p>
       )}
-    </div>
+    </>
   );
 }

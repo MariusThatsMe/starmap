@@ -1,8 +1,23 @@
 import { useMemo } from 'react';
-import { Text, Line } from '@react-three/drei';
+import { StraightLineMesh } from './LineMesh';
+import { BillboardText } from './BillboardText';
 import { useStarMapStore } from '../state/useStarMapStore';
 import * as THREE from 'three';
 import { toThreePosition } from '../utils/coordinate-render';
+
+/** Transparent grid material — never writes depth so lines/arcs behind the plane stay visible. */
+function gridMaterial(color: string, opacity: number) {
+  return (
+    <meshBasicMaterial
+      color={color}
+      transparent
+      opacity={opacity}
+      side={THREE.DoubleSide}
+      depthWrite={false}
+      fog={false}
+    />
+  );
+}
 
 export function TacticalGrid() {
   const maxRange = useStarMapStore((s) => s.maxDisplayRangeLy);
@@ -28,34 +43,33 @@ export function TacticalGrid() {
   const outerRadius = rings[rings.length - 1] ?? ringStep;
 
   return (
-    <group position={[fx, fy, fz]}>
+    <group position={[fx, fy, fz]} renderOrder={0}>
       {rings.map((r) => (
-        <mesh key={`ring-${r}`} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh key={`ring-${r}`} rotation={[-Math.PI / 2, 0, 0]} renderOrder={0}>
           <ringGeometry args={[r - 0.015, r + 0.015, 128]} />
-          <meshBasicMaterial color="#475569" transparent opacity={0.55} side={THREE.DoubleSide} />
+          {gridMaterial('#475569', 0.55)}
         </mesh>
       ))}
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={0}>
         <circleGeometry args={[outerRadius, 128]} />
-        <meshBasicMaterial color="#1e293b" transparent opacity={0.12} side={THREE.DoubleSide} />
+        {gridMaterial('#1e293b', 0.12)}
       </mesh>
 
       {spokes.map((angle, i) => (
-        <Line
+        <StraightLineMesh
           key={`spoke-${i}`}
-          points={[
-            [0, 0, 0],
-            [Math.cos(angle) * outerRadius, 0, Math.sin(angle) * outerRadius],
-          ]}
+          from={[0, 0, 0]}
+          to={[Math.cos(angle) * outerRadius, 0, Math.sin(angle) * outerRadius]}
           color="#475569"
-          transparent
           opacity={0.35}
+          radius={0.006}
+          renderOrder={5}
         />
       ))}
 
       {labelRings.map((r) => (
-        <Text
+        <BillboardText
           key={`lbl-${r}`}
           position={[r + 0.4, 0.15, 0]}
           fontSize={0.35}
@@ -64,7 +78,7 @@ export function TacticalGrid() {
           anchorY="middle"
         >
           {`${r} ly`}
-        </Text>
+        </BillboardText>
       ))}
     </group>
   );

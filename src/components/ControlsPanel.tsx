@@ -83,36 +83,42 @@ export function ControlsPanel() {
             onChange={(v) => setToggle('alwaysHighlightSol', v)}
             hint="Show Sol with a distinct marker even when not focused"
           />
+          {toggles.alwaysHighlightSol && (
+            <ToggleRow
+              label="Draw line to Sol"
+              checked={toggles.showLineToSol}
+              onChange={(v) => setToggle('showLineToSol', v)}
+              hint="Dashed line from focus star to Sol with distance"
+            />
+          )}
           <ToggleRow
-            label="Nearest-neighbor lines on hover"
+            label="Nearest-neighbor lines"
             checked={toggles.showHoverNearestLines}
             onChange={(v) => setToggle('showHoverNearestLines', v)}
-            hint="Draw lines to N closest stars with distances"
+            hint="Amber: focus · Cyan: hover · Fallback to focus when idle"
           />
         </div>
       </section>
 
-      {toggles.showHoverNearestLines && (
-        <section>
-          <label className="flex items-center gap-2 text-slate-300">
-            <span className="text-slate-200 font-medium shrink-0">Hover line count (N)</span>
-            <input
-              type="number"
-              min={1}
-              max={Math.max(1, catalog.length - 1)}
-              value={hoverNearestLineCount}
-              onChange={(e) => {
-                const parsed = parseInt(e.target.value, 10);
-                if (Number.isNaN(parsed)) return;
-                setHoverNearestLineCount(
-                  Math.min(Math.max(1, parsed), Math.max(1, catalog.length - 1)),
-                );
-              }}
-              className="w-20 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-slate-200 focus:border-sky-500 focus:outline-none"
-            />
-          </label>
-        </section>
-      )}
+      <section>
+        <label className="flex items-center gap-2 text-slate-300">
+          <span className="text-slate-200 font-medium shrink-0">Neighbor list/lines (N)</span>
+          <input
+            type="number"
+            min={1}
+            max={Math.max(1, catalog.length - 1)}
+            value={hoverNearestLineCount}
+            onChange={(e) => {
+              const parsed = parseInt(e.target.value, 10);
+              if (Number.isNaN(parsed)) return;
+              setHoverNearestLineCount(
+                Math.min(Math.max(1, parsed), Math.max(1, catalog.length - 1)),
+              );
+            }}
+            className="w-20 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-slate-200 focus:border-sky-500 focus:outline-none"
+          />
+        </label>
+      </section>
 
       <section>
         <h3 className="text-slate-200 font-medium mb-2">Neighbors</h3>

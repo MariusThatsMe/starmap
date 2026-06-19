@@ -52,5 +52,6 @@ export type DisplayToggles = {
   showLabels: boolean;
   showHoverNearestLines: boolean;
   alwaysHighlightSol: boolean;
+  showLineToSol: boolean;
   showAllStarNames: boolean;
 };

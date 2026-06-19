@@ -100,6 +100,7 @@ function initState() {
       showLabels: true,
       showHoverNearestLines: false,
       alwaysHighlightSol: false,
+      showLineToSol: false,
       showAllStarNames: false,
     },
     viewPreset: 'oblique' as ViewPreset,

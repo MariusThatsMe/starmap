@@ -9,8 +9,8 @@ import { ProjectedPoint } from './ProjectedPoint';
 import { ElevationArc } from './ElevationArc';
 import { StarLabel } from './StarLabel';
 import { StarTooltip } from './StarTooltip';
-import { HoverNearestLines } from './HoverNearestLines';
-import { Line } from '@react-three/drei';
+import { NeighborLines } from './NeighborLines';
+import { DashedLineMesh } from './LineMesh';
 import { toThreePosition } from '../utils/coordinate-render';
 import type { ViewPreset } from '../types';
 import { findStarById } from '../math/nearest-neighbors';
@@ -85,14 +85,14 @@ function DropLine({
   isHovered?: boolean;
 }) {
   return (
-    <Line
-      points={[from, to]}
+    <DashedLineMesh
+      from={from}
+      to={to}
       color={isSelected || isHovered ? '#fbbf24' : '#64748b'}
-      transparent
       opacity={0.5}
-      dashed
-      dashSize={0.3}
-      gapSize={0.15}
+      radius={0.008}
+      dashLength={0.3}
+      gapLength={0.15}
     />
   );
 }
@@ -179,7 +179,7 @@ function SceneContent() {
           <StarLabel star={focusStar} position={toThreePosition(focusStar.positionLy)} />
         )}
 
-        <HoverNearestLines hoveredStar={hoveredStar} />
+        <NeighborLines focusStar={focusStar} hoveredStar={hoveredStar} solStar={solStar} />
 
         {showStandaloneSol && toggles.showRealStars && solStar && (
           <>

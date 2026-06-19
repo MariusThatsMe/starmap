@@ -32,6 +32,17 @@ export function findNearestStars(
   return scored.slice(0, limit).map((s) => s.star);
 }
 
+export function findNearestStarsWithDistances(
+  catalog: Star[],
+  fromStar: Star,
+  limit: number,
+): { star: Star; distanceLy: number }[] {
+  return findNearestStars(catalog, fromStar, limit).map((star) => ({
+    star,
+    distanceLy: distanceBetweenStars(fromStar, star),
+  }));
+}
+
 export function findStarById(catalog: Star[], id: string): Star | undefined {
   return catalog.find((s) => s.id === id);
 }

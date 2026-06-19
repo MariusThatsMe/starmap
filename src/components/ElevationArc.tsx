@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { Line } from '@react-three/drei';
 import type { Vec3 } from '../math/vector';
 import { toThreePosition } from '../utils/coordinate-render';
+import { PathLineMesh } from './LineMesh';
 
 type Props = {
   arcPoints: Vec3[];
@@ -21,5 +21,7 @@ export function ElevationArc({ arcPoints, belowPlane, isSelected, isHovered }: P
 
   if (points.length < 2) return null;
 
-  return <Line points={points} color={color} transparent opacity={opacity} lineWidth={1} />;
+  return (
+    <PathLineMesh points={points} color={color} opacity={opacity} radius={0.01} renderOrder={10} />
+  );
 }
