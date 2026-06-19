@@ -70,6 +70,12 @@ export function ControlsPanel() {
             onChange={(v) => setToggle('showLabels', v)}
           />
           <ToggleRow
+            label="Always highlight Sol"
+            checked={toggles.alwaysHighlightSol}
+            onChange={(v) => setToggle('alwaysHighlightSol', v)}
+            hint="Show Sol with a distinct marker even when not focused"
+          />
+          <ToggleRow
             label="Nearest-neighbor lines on hover"
             checked={toggles.showHoverNearestLines}
             onChange={(v) => setToggle('showHoverNearestLines', v)}

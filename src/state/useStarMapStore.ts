@@ -99,6 +99,7 @@ function initState() {
       showDropLines: false,
       showLabels: true,
       showHoverNearestLines: false,
+      alwaysHighlightSol: false,
     },
     viewPreset: 'oblique' as ViewPreset,
     focusHistory: [] as string[],

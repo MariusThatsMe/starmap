@@ -51,4 +51,5 @@ export type DisplayToggles = {
   showDropLines: boolean;
   showLabels: boolean;
   showHoverNearestLines: boolean;
+  alwaysHighlightSol: boolean;
 };

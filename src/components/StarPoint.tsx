@@ -8,6 +8,7 @@ type Props = {
   star: Star;
   position: [number, number, number];
   isFocus?: boolean;
+  isSolHighlight?: boolean;
   isSelected?: boolean;
   isHovered?: boolean;
   onClick?: () => void;
@@ -19,6 +20,7 @@ export function StarPoint({
   star,
   position,
   isFocus,
+  isSolHighlight,
   isSelected,
   isHovered,
   onClick,
@@ -28,7 +30,13 @@ export function StarPoint({
   const ref = useRef<Mesh>(null);
   const color = spectralColor(star.spectralType);
   const radius = starRadius(star.absoluteMagnitude, star.apparentMagnitude);
-  const scale = isFocus ? radius * 2.2 : isSelected || isHovered ? radius * 1.6 : radius;
+  const scale = isFocus
+    ? radius * 2.2
+    : isSolHighlight
+      ? radius * 1.8
+      : isSelected || isHovered
+        ? radius * 1.6
+        : radius;
 
   return (
     <mesh
@@ -52,12 +60,20 @@ export function StarPoint({
       <meshStandardMaterial
         color={color}
         emissive={color}
-        emissiveIntensity={isFocus ? 1.2 : isSelected || isHovered ? 0.9 : 0.5}
+        emissiveIntensity={
+          isFocus ? 1.2 : isSolHighlight ? 1.0 : isSelected || isHovered ? 0.9 : 0.5
+        }
       />
       {isFocus && (
         <mesh scale={1.8}>
           <sphereGeometry args={[scale, 16, 16]} />
           <meshBasicMaterial color="#fbbf24" wireframe transparent opacity={0.35} />
+        </mesh>
+      )}
+      {isSolHighlight && !isFocus && (
+        <mesh scale={1.65}>
+          <sphereGeometry args={[scale, 16, 16]} />
+          <meshBasicMaterial color="#fde047" wireframe transparent opacity={0.45} />
         </mesh>
       )}
     </mesh>

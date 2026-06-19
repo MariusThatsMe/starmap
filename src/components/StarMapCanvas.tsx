@@ -13,6 +13,7 @@ import { HoverNearestLines } from './HoverNearestLines';
 import { Line } from '@react-three/drei';
 import { toThreePosition } from '../utils/coordinate-render';
 import type { ViewPreset } from '../types';
+import { findStarById } from '../math/nearest-neighbors';
 
 const CAMERA_OFFSETS: Record<ViewPreset, [number, number, number]> = {
   oblique: [12, 14, 10],
@@ -100,6 +101,7 @@ function SceneContent() {
   const focusStar = useStarMapStore((s) => s.focusStar);
   const projectedStars = useStarMapStore((s) => s.projectedStars);
   const toggles = useStarMapStore((s) => s.toggles);
+  const catalog = useStarMapStore((s) => s.catalog);
   const selectedStarId = useStarMapStore((s) => s.selectedStarId);
   const hoveredStarId = useStarMapStore((s) => s.hoveredStarId);
   const setSelectedStarId = useStarMapStore((s) => s.setSelectedStarId);
@@ -129,13 +131,23 @@ function SceneContent() {
     [setSelectedStarId, setHoveredStarId],
   );
 
+  const solStar = useMemo(() => findStarById(catalog, 'sol'), [catalog]);
+
   const hoveredStar = useMemo(() => {
     if (!hoveredStarId) return null;
     if (hoveredStarId === focusStar.id) return focusStar;
+    if (hoveredStarId === 'sol' && solStar) return solStar;
     return projectedStars.find((p) => p.star.id === hoveredStarId)?.star ?? null;
-  }, [hoveredStarId, focusStar, projectedStars]);
+  }, [hoveredStarId, focusStar, projectedStars, solStar]);
 
   const focusHandlers = handleStarInteraction(focusStar.id);
+
+  const solInNeighborSet = projectedStars.some((p) => p.star.id === 'sol');
+  const showStandaloneSol =
+    toggles.alwaysHighlightSol &&
+    solStar &&
+    focusStar.id !== 'sol' &&
+    !solInNeighborSet;
 
   return (
     <>
@@ -154,6 +166,22 @@ function SceneContent() {
         />
 
         <HoverNearestLines hoveredStar={hoveredStar} />
+
+        {showStandaloneSol && toggles.showRealStars && solStar && (
+          <>
+            <StarPoint
+              star={solStar}
+              position={toThreePosition(solStar.positionLy)}
+              isSolHighlight
+              isSelected={selectedStarId === 'sol'}
+              isHovered={hoveredStarId === 'sol'}
+              {...handleStarInteraction('sol')}
+            />
+            {toggles.showLabels && (
+              <StarLabel star={solStar} position={toThreePosition(solStar.positionLy)} />
+            )}
+          </>
+        )}
 
         {projectedStars.map((p) => {
           const id = p.star.id;
@@ -183,6 +211,7 @@ function SceneContent() {
                 <StarPoint
                   star={p.star}
                   position={real}
+                  isSolHighlight={toggles.alwaysHighlightSol && id === 'sol' && focusStar.id !== 'sol'}
                   isSelected={isSelected}
                   isHovered={isHovered}
                   {...handlers}
@@ -198,7 +227,9 @@ function SceneContent() {
                 />
               )}
 
-              {toggles.showLabels && labelStars.some((ls) => ls.star.id === id) && (
+              {toggles.showLabels &&
+                (labelStars.some((ls) => ls.star.id === id) ||
+                  (toggles.alwaysHighlightSol && id === 'sol')) && (
                 <StarLabel star={p.star} position={real} />
               )}
             </group>
