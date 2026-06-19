@@ -43,7 +43,7 @@ export function SearchBox() {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-md">
+    <div ref={containerRef} className="relative z-50 w-full max-w-md">
       <input
         type="search"
         value={query}
@@ -53,7 +53,7 @@ export function SearchBox() {
         className="w-full rounded-lg border border-slate-600 bg-slate-900/90 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
       />
       {open && results.length > 0 && (
-        <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-slate-600 bg-slate-900 shadow-xl">
+        <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-slate-600 bg-slate-900/95 shadow-xl backdrop-blur">
           {results.map((star) => {
             const inView = displayedIdSet.has(star.id);
             return (

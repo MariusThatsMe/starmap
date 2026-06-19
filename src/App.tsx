@@ -15,7 +15,7 @@ function App() {
 
   return (
     <div className="flex h-screen flex-col bg-slate-950 text-slate-200">
-      <header className="shrink-0 border-b border-slate-800 bg-slate-900/80 px-4 py-3 backdrop-blur">
+      <header className="relative z-30 shrink-0 border-b border-slate-800 bg-slate-900/80 px-4 py-3 backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-lg font-bold text-white">Local Stars Tactical Projection</h1>
@@ -37,7 +37,7 @@ function App() {
           <ControlsPanel />
         </aside>
 
-        <main className="relative min-w-0 flex-1">
+        <main className="relative z-0 min-w-0 flex-1">
           <StarMapCanvas />
         </main>
 
