@@ -2,6 +2,13 @@ import { create } from 'zustand';
 import { loadCatalog } from '../data/catalog-loader';
 import { findNearestStars, findStarById, searchStars } from '../math/nearest-neighbors';
 import {
+  computeExpansionReach,
+  planTravelRouteFromIds,
+  type ExpansionReach,
+  type TravelRoute,
+  type TravelRouteFailure,
+} from '../math/travel-route';
+import {
   NATIVE_XY_PLANE,
   projectStarToTacticalPlane,
 } from '../math/projection';
@@ -31,6 +38,11 @@ type StarMapState = {
   maxDisplayRangeLy: number;
   ringStepLy: number;
   hoverNearestLineCount: number;
+  maxHopLy: number;
+  travelRoute: TravelRoute | null;
+  travelRouteError: TravelRouteFailure | null;
+  maxExpansionHops: number;
+  expansionReach: ExpansionReach | null;
 
   setFocusStarId: (id: string) => void;
   focusOnStar: (id: string) => void;
@@ -43,6 +55,12 @@ type StarMapState = {
   setHoveredStarId: (id: string | null) => void;
   setToggle: (key: keyof DisplayToggles, value: boolean) => void;
   setHoverNearestLineCount: (n: number) => void;
+  setMaxHopLy: (ly: number) => void;
+  planTravelRoute: () => void;
+  clearTravelRoute: () => void;
+  setMaxExpansionHops: (hops: number) => void;
+  simulateExpansionReach: () => void;
+  clearExpansionReach: () => void;
   setViewPreset: (preset: ViewPreset) => void;
   search: (query: string) => Star[];
   recompute: () => void;
@@ -69,6 +87,14 @@ function computeProjections(
 
   const maxRange = projected.reduce((m, p) => Math.max(m, p.trueDistanceLy), 0);
   return { displayed, projected, maxRange };
+}
+
+function clearTravelState() {
+  return {
+    travelRoute: null as TravelRoute | null,
+    travelRouteError: null as TravelRouteFailure | null,
+    expansionReach: null as ExpansionReach | null,
+  };
 }
 
 function initState() {
@@ -109,6 +135,11 @@ function initState() {
     maxDisplayRangeLy: maxRange,
     ringStepLy: maxRange > 15 ? 2 : 1,
     hoverNearestLineCount: 3,
+    maxHopLy: 5,
+    travelRoute: null,
+    travelRouteError: null,
+    maxExpansionHops: 3,
+    expansionReach: null,
   };
 }
 
@@ -137,6 +168,7 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
   setFocusStarId: (id) => {
     set((s) => ({
       focusState: { ...s.focusState, focusStarId: id },
+      ...clearTravelState(),
     }));
     get().recompute();
   },
@@ -148,6 +180,7 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
       focusHistory: [...s.focusHistory, focusState.focusStarId],
       focusState: { ...focusState, focusStarId: id },
       selectedStarId: id,
+      ...clearTravelState(),
     }));
     get().recompute();
   },
@@ -157,6 +190,7 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
       focusHistory: [],
       focusState: { ...s.focusState, focusStarId: 'sol' },
       selectedStarId: null,
+      ...clearTravelState(),
     }));
     get().recompute();
   },
@@ -168,6 +202,7 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
     set({
       focusHistory: focusHistory.slice(0, -1),
       focusState: { ...focusState, focusStarId: prev },
+      ...clearTravelState(),
     });
     get().recompute();
   },
@@ -187,13 +222,53 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
     get().recompute();
   },
 
-  setSelectedStarId: (id) => set({ selectedStarId: id }),
+  setSelectedStarId: (id) => set({ selectedStarId: id, ...clearTravelState() }),
   setHoveredStarId: (id) => set({ hoveredStarId: id }),
 
   setToggle: (key, value) =>
     set((s) => ({ toggles: { ...s.toggles, [key]: value } })),
 
   setHoverNearestLineCount: (n) => set({ hoverNearestLineCount: Math.max(0, n) }),
+
+  setMaxHopLy: (ly) => set({ maxHopLy: Math.max(0.1, ly) }),
+
+  planTravelRoute: () => {
+    const { catalog, focusStar, selectedStarId, maxHopLy } = get();
+    if (!selectedStarId) {
+      set(clearTravelState());
+      return;
+    }
+
+    const result = planTravelRouteFromIds(
+      catalog,
+      focusStar.id,
+      selectedStarId,
+      maxHopLy,
+    );
+
+    if (result.ok) {
+      set({ travelRoute: result.route, travelRouteError: null, expansionReach: null });
+      return;
+    }
+
+    set({ travelRoute: null, travelRouteError: result.reason, expansionReach: null });
+  },
+
+  clearTravelRoute: () => set({ travelRoute: null, travelRouteError: null }),
+
+  setMaxExpansionHops: (hops) => set({ maxExpansionHops: Math.max(1, Math.min(6, hops)) }),
+
+  simulateExpansionReach: () => {
+    const { catalog, focusStar, maxHopLy, maxExpansionHops } = get();
+    const reach = computeExpansionReach(catalog, focusStar, maxHopLy, maxExpansionHops);
+    set({
+      expansionReach: reach,
+      travelRoute: null,
+      travelRouteError: null,
+    });
+  },
+
+  clearExpansionReach: () => set({ expansionReach: null }),
 
   setViewPreset: (preset) => set({ viewPreset: preset }),
 

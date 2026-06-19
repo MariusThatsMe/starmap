@@ -11,6 +11,7 @@ type Props = {
   isSolHighlight?: boolean;
   isSelected?: boolean;
   isHovered?: boolean;
+  expansionHop?: number;
   onClick?: () => void;
   onPointerOver?: () => void;
   onPointerOut?: () => void;
@@ -23,6 +24,7 @@ export function StarPoint({
   isSolHighlight,
   isSelected,
   isHovered,
+  expansionHop,
   onClick,
   onPointerOver,
   onPointerOut,
@@ -36,7 +38,18 @@ export function StarPoint({
       ? radius * 1.8
       : isSelected || isHovered
         ? radius * 1.6
-        : radius;
+        : expansionHop
+          ? radius * (1.35 + Math.max(0, 3 - expansionHop) * 0.05)
+          : radius;
+
+  const expansionRingColor =
+    expansionHop === 1
+      ? '#c4b5fd'
+      : expansionHop === 2
+        ? '#a78bfa'
+        : expansionHop === 3
+          ? '#8b5cf6'
+          : '#7c3aed';
 
   return (
     <mesh
@@ -61,9 +74,28 @@ export function StarPoint({
         color={color}
         emissive={color}
         emissiveIntensity={
-          isFocus ? 1.2 : isSolHighlight ? 1.0 : isSelected || isHovered ? 0.9 : 0.5
+          isFocus
+            ? 1.2
+            : isSolHighlight
+              ? 1.0
+              : isSelected || isHovered
+                ? 0.9
+                : expansionHop
+                  ? 0.65 + Math.max(0, 3 - expansionHop) * 0.1
+                  : 0.5
         }
       />
+      {expansionHop !== undefined && expansionHop > 0 && !isFocus && (
+        <mesh scale={1.55}>
+          <sphereGeometry args={[scale, 16, 16]} />
+          <meshBasicMaterial
+            color={expansionRingColor}
+            wireframe
+            transparent
+            opacity={Math.max(0.3, 0.7 - (expansionHop - 1) * 0.1)}
+          />
+        </mesh>
+      )}
       {isFocus && (
         <mesh scale={1.8}>
           <sphereGeometry args={[scale, 16, 16]} />

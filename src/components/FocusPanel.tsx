@@ -3,6 +3,7 @@ import type { ProjectedStar } from '../types';
 import { formatCatalogIds, formatDistanceLy } from '../utils/star-visuals';
 import { useStarMapStore } from '../state/useStarMapStore';
 import { findNearestStarsWithDistances } from '../math/nearest-neighbors';
+import { TravelPanel } from './TravelPanel';
 
 type Props = {
   projected: ProjectedStar | null;
@@ -107,6 +108,8 @@ export function FocusPanel({ projected }: Props) {
           catalogLimited={catalogLimited}
         />
       )}
+
+      <TravelPanel />
     </div>
   );
 }

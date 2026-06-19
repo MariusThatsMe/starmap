@@ -10,6 +10,8 @@ import { ElevationArc } from './ElevationArc';
 import { StarLabel } from './StarLabel';
 import { StarTooltip } from './StarTooltip';
 import { NeighborLines } from './NeighborLines';
+import { TravelRouteLines } from './TravelRouteLines';
+import { ExpansionReachLines } from './ExpansionReachLines';
 import { DashedLineMesh } from './LineMesh';
 import { toThreePosition } from '../utils/coordinate-render';
 import type { ViewPreset } from '../types';
@@ -108,6 +110,16 @@ function SceneContent() {
   const setHoveredStarId = useStarMapStore((s) => s.setHoveredStarId);
   const viewPreset = useStarMapStore((s) => s.viewPreset);
   const setViewPreset = useStarMapStore((s) => s.setViewPreset);
+  const expansionReach = useStarMapStore((s) => s.expansionReach);
+
+  const getExpansionHop = useCallback(
+    (starId: string) => {
+      if (!expansionReach) return undefined;
+      const hop = expansionReach.hopByStarId[starId];
+      return hop && hop > 0 ? hop : undefined;
+    },
+    [expansionReach],
+  );
 
   const focusOffset = useMemo(() => {
     const [fx, fy, fz] = toThreePosition(focusStar.positionLy);
@@ -199,6 +211,10 @@ function SceneContent() {
           solStar={solStar}
         />
 
+        <TravelRouteLines />
+
+        <ExpansionReachLines />
+
         {showStandaloneSol && toggles.showRealStars && solStar && (
           <>
             <StarPoint
@@ -207,6 +223,7 @@ function SceneContent() {
               isSolHighlight
               isSelected={selectedStarId === 'sol'}
               isHovered={hoveredStarId === 'sol'}
+              expansionHop={getExpansionHop('sol')}
               {...handleStarInteraction('sol')}
             />
             {shouldShowLabel('sol') && (
@@ -246,6 +263,7 @@ function SceneContent() {
                   isSolHighlight={toggles.alwaysHighlightSol && id === 'sol' && focusStar.id !== 'sol'}
                   isSelected={isSelected}
                   isHovered={isHovered}
+                  expansionHop={getExpansionHop(id)}
                   {...handlers}
                 />
               )}
