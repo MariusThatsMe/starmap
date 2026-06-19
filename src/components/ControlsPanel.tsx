@@ -3,8 +3,6 @@ import type { ViewPreset } from '../types';
 
 const NEIGHBOR_OPTIONS = [25, 50, 100, 250, 0] as const;
 
-const HOVER_NEAREST_OPTIONS = [1, 2, 3, 5, 10, 15] as const;
-
 export function ControlsPanel() {
   const toggles = useStarMapStore((s) => s.toggles);
   const setToggle = useStarMapStore((s) => s.setToggle);
@@ -82,23 +80,23 @@ export function ControlsPanel() {
 
       {toggles.showHoverNearestLines && (
         <section>
-          <h3 className="text-slate-200 font-medium mb-2">Hover line count (N)</h3>
-          <div className="flex flex-wrap gap-1.5">
-            {HOVER_NEAREST_OPTIONS.map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setHoverNearestLineCount(n)}
-                className={`rounded px-2 py-1 ${
-                  hoverNearestLineCount === n
-                    ? 'bg-sky-600 text-white'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
+          <label className="flex items-center gap-2 text-slate-300">
+            <span className="text-slate-200 font-medium shrink-0">Hover line count (N)</span>
+            <input
+              type="number"
+              min={1}
+              max={Math.max(1, catalog.length - 1)}
+              value={hoverNearestLineCount}
+              onChange={(e) => {
+                const parsed = parseInt(e.target.value, 10);
+                if (Number.isNaN(parsed)) return;
+                setHoverNearestLineCount(
+                  Math.min(Math.max(1, parsed), Math.max(1, catalog.length - 1)),
+                );
+              }}
+              className="w-20 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-slate-200 focus:border-sky-500 focus:outline-none"
+            />
+          </label>
         </section>
       )}
 
