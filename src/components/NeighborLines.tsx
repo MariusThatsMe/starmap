@@ -14,6 +14,7 @@ import { DashedLineMesh, StraightLineMesh, lineMidpoint } from './LineMesh';
 type Props = {
   focusStar: Star;
   hoveredStar: Star | null;
+  selectedStar: Star | null;
   solStar: Star | undefined;
 };
 
@@ -45,7 +46,7 @@ function buildLinks(fromStar: Star, neighbors: { star: Star; distanceLy: number 
   });
 }
 
-export function NeighborLines({ focusStar, hoveredStar, solStar }: Props) {
+export function NeighborLines({ focusStar, hoveredStar, selectedStar, solStar }: Props) {
   const catalog = useStarMapStore((s) => s.catalog);
   const showNeighborLines = useStarMapStore((s) => s.toggles.showHoverNearestLines);
   const showLineToSol = useStarMapStore((s) => s.toggles.showLineToSol);
@@ -57,7 +58,12 @@ export function NeighborLines({ focusStar, hoveredStar, solStar }: Props) {
     if (showNeighborLines && count > 0) {
       const hoverIsFocus = hoveredStar?.id === focusStar.id;
       const showFocusLines = !hoveredStar || !hoverIsFocus;
-      const showHoverLines = hoveredStar && !hoverIsFocus;
+      const cyanTargetStar =
+        hoveredStar && !hoverIsFocus
+          ? hoveredStar
+          : !hoveredStar && selectedStar && selectedStar.id !== focusStar.id
+            ? selectedStar
+            : null;
 
       if (showFocusLines) {
         const focusNeighbors = findNearestStarsWithDistances(catalog, focusStar, count);
@@ -65,17 +71,17 @@ export function NeighborLines({ focusStar, hoveredStar, solStar }: Props) {
           result.push({
             ...link,
             color: '#fbbf24',
-            opacity: showHoverLines ? 0.45 : 0.75,
+            opacity: cyanTargetStar ? 0.45 : 0.75,
           });
         }
       }
 
-      if (showHoverLines && hoveredStar) {
-        const hoverNeighbors = findNearestStarsWithDistances(catalog, hoveredStar, count);
-        for (const link of buildLinks(hoveredStar, hoverNeighbors)) {
+      if (cyanTargetStar) {
+        const targetNeighbors = findNearestStarsWithDistances(catalog, cyanTargetStar, count);
+        for (const link of buildLinks(cyanTargetStar, targetNeighbors)) {
           result.push({
             ...link,
-            key: `hover-${link.key}`,
+            key: `cyan-${link.key}`,
             color: '#22d3ee',
             opacity: 0.85,
           });
@@ -101,7 +107,7 @@ export function NeighborLines({ focusStar, hoveredStar, solStar }: Props) {
     }
 
     return result;
-  }, [showNeighborLines, showLineToSol, count, catalog, focusStar, hoveredStar, solStar]);
+  }, [showNeighborLines, showLineToSol, count, catalog, focusStar, hoveredStar, selectedStar, solStar]);
 
   if (links.length === 0) return null;
 

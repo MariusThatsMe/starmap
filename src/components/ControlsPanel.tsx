@@ -95,7 +95,7 @@ export function ControlsPanel() {
             label="Nearest-neighbor lines"
             checked={toggles.showHoverNearestLines}
             onChange={(v) => setToggle('showHoverNearestLines', v)}
-            hint="Amber: focus · Cyan: hover · Fallback to focus when idle"
+            hint="Amber: focus · Cyan: hover or selected when idle"
           />
         </div>
       </section>

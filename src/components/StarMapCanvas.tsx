@@ -133,12 +133,25 @@ function SceneContent() {
 
   const solStar = useMemo(() => findStarById(catalog, 'sol'), [catalog]);
 
-  const hoveredStar = useMemo(() => {
-    if (!hoveredStarId) return null;
-    if (hoveredStarId === focusStar.id) return focusStar;
-    if (hoveredStarId === 'sol' && solStar) return solStar;
-    return projectedStars.find((p) => p.star.id === hoveredStarId)?.star ?? null;
-  }, [hoveredStarId, focusStar, projectedStars, solStar]);
+  const resolveStarById = useCallback(
+    (starId: string | null) => {
+      if (!starId) return null;
+      if (starId === focusStar.id) return focusStar;
+      if (starId === 'sol' && solStar) return solStar;
+      return projectedStars.find((p) => p.star.id === starId)?.star ?? null;
+    },
+    [focusStar, projectedStars, solStar],
+  );
+
+  const hoveredStar = useMemo(
+    () => resolveStarById(hoveredStarId),
+    [hoveredStarId, resolveStarById],
+  );
+
+  const selectedStar = useMemo(
+    () => resolveStarById(selectedStarId),
+    [selectedStarId, resolveStarById],
+  );
 
   const focusHandlers = handleStarInteraction(focusStar.id);
 
@@ -179,7 +192,12 @@ function SceneContent() {
           <StarLabel star={focusStar} position={toThreePosition(focusStar.positionLy)} />
         )}
 
-        <NeighborLines focusStar={focusStar} hoveredStar={hoveredStar} solStar={solStar} />
+        <NeighborLines
+          focusStar={focusStar}
+          hoveredStar={hoveredStar}
+          selectedStar={selectedStar}
+          solStar={solStar}
+        />
 
         {showStandaloneSol && toggles.showRealStars && solStar && (
           <>
