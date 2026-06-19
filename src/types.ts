@@ -50,4 +50,5 @@ export type DisplayToggles = {
   showElevationArcs: boolean;
   showDropLines: boolean;
   showLabels: boolean;
+  showHoverNearestLines: boolean;
 };

@@ -9,6 +9,7 @@ import { ProjectedPoint } from './ProjectedPoint';
 import { ElevationArc } from './ElevationArc';
 import { StarLabel } from './StarLabel';
 import { StarTooltip } from './StarTooltip';
+import { HoverNearestLines } from './HoverNearestLines';
 import { Line } from '@react-three/drei';
 import { toThreePosition } from '../utils/coordinate-render';
 import type { ViewPreset } from '../types';
@@ -128,6 +129,14 @@ function SceneContent() {
     [setSelectedStarId, setHoveredStarId],
   );
 
+  const hoveredStar = useMemo(() => {
+    if (!hoveredStarId) return null;
+    if (hoveredStarId === focusStar.id) return focusStar;
+    return projectedStars.find((p) => p.star.id === hoveredStarId)?.star ?? null;
+  }, [hoveredStarId, focusStar, projectedStars]);
+
+  const focusHandlers = handleStarInteraction(focusStar.id);
+
   return (
     <>
       <ambientLight intensity={0.35} />
@@ -140,7 +149,11 @@ function SceneContent() {
           star={focusStar}
           position={toThreePosition(focusStar.positionLy)}
           isFocus
+          isHovered={hoveredStarId === focusStar.id}
+          {...focusHandlers}
         />
+
+        <HoverNearestLines hoveredStar={hoveredStar} />
 
         {projectedStars.map((p) => {
           const id = p.star.id;

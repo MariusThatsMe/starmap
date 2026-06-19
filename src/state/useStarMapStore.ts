@@ -30,6 +30,7 @@ type StarMapState = {
   catalogLimited: boolean;
   maxDisplayRangeLy: number;
   ringStepLy: number;
+  hoverNearestLineCount: number;
 
   setFocusStarId: (id: string) => void;
   focusOnStar: (id: string) => void;
@@ -41,6 +42,7 @@ type StarMapState = {
   setSelectedStarId: (id: string | null) => void;
   setHoveredStarId: (id: string | null) => void;
   setToggle: (key: keyof DisplayToggles, value: boolean) => void;
+  setHoverNearestLineCount: (n: number) => void;
   setViewPreset: (preset: ViewPreset) => void;
   search: (query: string) => Star[];
   recompute: () => void;
@@ -96,12 +98,14 @@ function initState() {
       showElevationArcs: true,
       showDropLines: false,
       showLabels: true,
+      showHoverNearestLines: false,
     },
     viewPreset: 'oblique' as ViewPreset,
     focusHistory: [] as string[],
     catalogLimited: false,
     maxDisplayRangeLy: maxRange,
     ringStepLy: maxRange > 15 ? 2 : 1,
+    hoverNearestLineCount: 3,
   };
 }
 
@@ -185,6 +189,8 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
 
   setToggle: (key, value) =>
     set((s) => ({ toggles: { ...s.toggles, [key]: value } })),
+
+  setHoverNearestLineCount: (n) => set({ hoverNearestLineCount: Math.max(0, n) }),
 
   setViewPreset: (preset) => set({ viewPreset: preset }),
 

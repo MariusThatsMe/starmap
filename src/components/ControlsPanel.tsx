@@ -3,9 +3,13 @@ import type { ViewPreset } from '../types';
 
 const NEIGHBOR_OPTIONS = [25, 50, 100, 250, 0] as const;
 
+const HOVER_NEAREST_OPTIONS = [1, 2, 3, 5, 10, 15] as const;
+
 export function ControlsPanel() {
   const toggles = useStarMapStore((s) => s.toggles);
   const setToggle = useStarMapStore((s) => s.setToggle);
+  const hoverNearestLineCount = useStarMapStore((s) => s.hoverNearestLineCount);
+  const setHoverNearestLineCount = useStarMapStore((s) => s.setHoverNearestLineCount);
   const neighborLimit = useStarMapStore((s) => s.focusState.neighborLimit);
   const setNeighborLimit = useStarMapStore((s) => s.setNeighborLimit);
   const maxRangeLy = useStarMapStore((s) => s.focusState.maxRangeLy);
@@ -67,8 +71,36 @@ export function ControlsPanel() {
             checked={toggles.showLabels}
             onChange={(v) => setToggle('showLabels', v)}
           />
+          <ToggleRow
+            label="Nearest-neighbor lines on hover"
+            checked={toggles.showHoverNearestLines}
+            onChange={(v) => setToggle('showHoverNearestLines', v)}
+            hint="Draw lines to N closest stars with distances"
+          />
         </div>
       </section>
+
+      {toggles.showHoverNearestLines && (
+        <section>
+          <h3 className="text-slate-200 font-medium mb-2">Hover line count (N)</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {HOVER_NEAREST_OPTIONS.map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setHoverNearestLineCount(n)}
+                className={`rounded px-2 py-1 ${
+                  hoverNearestLineCount === n
+                    ? 'bg-sky-600 text-white'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h3 className="text-slate-200 font-medium mb-2">Neighbors</h3>
