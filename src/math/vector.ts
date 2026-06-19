@@ -44,6 +44,13 @@ export function distance(a: Vec3, b: Vec3): number {
   return length(sub(a, b));
 }
 
+/** Remove the component of v along normal (need not be unit length). */
+export function projectOntoPlane(v: Vec3, normal: Vec3): Vec3 {
+  const nLenSq = dot(normal, normal);
+  if (nLenSq < EPSILON) return v;
+  return sub(v, scale(normal, dot(v, normal) / nLenSq));
+}
+
 export function hashToAzimuth(id: string): number {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {

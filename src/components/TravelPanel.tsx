@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useStarMapStore } from '../state/useStarMapStore';
 import { formatDistanceLy } from '../utils/star-visuals';
-import type { TravelRouteFailure } from '../math/travel-route';
+import type { TravelRouteFailure, TravelLeg } from '../math/travel-route';
 import type { Star } from '../types';
 
 const HOP_PREVIEW_LIMIT = 8;
@@ -22,11 +22,13 @@ function routeErrorMessage(reason: TravelRouteFailure, maxHopLy: number): string
 function HopGroupList({
   hop,
   stars,
+  legByStarId,
   selectedStarId,
   onSelect,
 }: {
   hop: number;
   stars: Star[];
+  legByStarId: Map<string, TravelLeg>;
   selectedStarId: string | null;
   onSelect: (id: string) => void;
 }) {
@@ -39,19 +41,28 @@ function HopGroupList({
         Hop {hop} · {stars.length} system{stars.length === 1 ? '' : 's'}
       </h4>
       <ol className="space-y-0.5">
-        {preview.map((star) => (
-          <li key={star.id}>
-            <button
-              type="button"
-              onClick={() => onSelect(star.id)}
-              className={`w-full rounded px-2 py-1 text-left text-xs hover:bg-slate-800 ${
-                selectedStarId === star.id ? 'bg-slate-800 ring-1 ring-violet-500' : ''
-              }`}
-            >
-              <span className="text-slate-200">{star.name}</span>
-            </button>
-          </li>
-        ))}
+        {preview.map((star) => {
+          const leg = legByStarId.get(star.id);
+
+          return (
+            <li key={star.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(star.id)}
+                className={`w-full rounded px-2 py-1 text-left text-xs hover:bg-slate-800 ${
+                  selectedStarId === star.id ? 'bg-slate-800 ring-1 ring-violet-500' : ''
+                }`}
+              >
+                <span className="text-slate-200">{star.name}</span>
+                {leg && (
+                  <p className="mt-0.5 text-[10px] text-violet-400/90">
+                    from {leg.from.name} · {formatDistanceLy(leg.distanceLy)}
+                  </p>
+                )}
+              </button>
+            </li>
+          );
+        })}
       </ol>
       {remaining > 0 && (
         <p className="mt-1 px-2 text-[10px] text-slate-500">+ {remaining} more</p>
@@ -91,6 +102,15 @@ export function TravelPanel() {
       (id) => id !== expansionReach.origin.id && !projectedIds.has(id),
     ).length;
   }, [expansionReach, projectedIds]);
+
+  const expansionLegByStarId = useMemo(() => {
+    if (!expansionReach) return new Map<string, TravelLeg>();
+    const map = new Map<string, TravelLeg>();
+    for (const leg of expansionReach.treeLegs) {
+      map.set(leg.to.id, leg);
+    }
+    return map;
+  }, [expansionReach]);
 
   const selectedStar = selectedStarId
     ? catalog.find((star) => star.id === selectedStarId)
@@ -179,34 +199,39 @@ export function TravelPanel() {
           </p>
 
           <ol className="space-y-1 text-xs">
-            {travelRoute.stars.map((star, index) => (
-              <li key={star.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedStarId(star.id)}
-                  className="w-full rounded px-2 py-1 text-left hover:bg-slate-800"
-                >
-                  <span className="text-slate-500 mr-1.5">{index + 1}.</span>
-                  <span className="text-slate-200">{star.name}</span>
-                  {index === 0 && (
-                    <span className="ml-2 text-[10px] uppercase tracking-wide text-amber-400">
-                      focus
-                    </span>
-                  )}
-                  {index === travelRoute.stars.length - 1 && (
-                    <span className="ml-2 text-[10px] uppercase tracking-wide text-sky-400">
-                      destination
-                    </span>
-                  )}
-                </button>
-                {index < travelRoute.legs.length && (
-                  <div className="ml-5 flex items-center justify-between gap-2 py-0.5 pl-2 text-[10px] text-emerald-400/90">
-                    <span>↓ hop</span>
-                    <span>{formatDistanceLy(travelRoute.legs[index].distanceLy)}</span>
-                  </div>
-                )}
-              </li>
-            ))}
+            {travelRoute.stars.map((star, index) => {
+              const leg = index > 0 ? travelRoute.legs[index - 1] : null;
+
+              return (
+                <li key={star.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStarId(star.id)}
+                    className="w-full rounded px-2 py-1 text-left hover:bg-slate-800"
+                  >
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-slate-500">{index + 1}.</span>
+                      <span className="text-slate-200">{star.name}</span>
+                      {index === 0 && (
+                        <span className="text-[10px] uppercase tracking-wide text-amber-400">
+                          focus
+                        </span>
+                      )}
+                      {index === travelRoute.stars.length - 1 && (
+                        <span className="text-[10px] uppercase tracking-wide text-sky-400">
+                          destination
+                        </span>
+                      )}
+                    </div>
+                    {leg && (
+                      <p className="mt-0.5 pl-4 text-[10px] text-emerald-400/90">
+                        from {leg.from.name} · {formatDistanceLy(leg.distanceLy)}
+                      </p>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
           </ol>
 
           {travelRoute.stars.length > 1 && (
@@ -222,9 +247,10 @@ export function TravelPanel() {
       )}
 
       <div className="mt-4 border-t border-slate-700 pt-3">
-        <h4 className="text-sm font-semibold text-white mb-1">Colonization reach</h4>
+        <h4 className="text-sm font-semibold text-white mb-1">Travel reach</h4>
         <p className="text-xs text-slate-400 mb-3">
-          Simulate how many systems are reachable from {focusStar.name} within a hop budget.
+          From the focus system <span className="text-amber-400">{focusStar.name}</span>, simulate
+          which star systems are reachable within your hop budget and max hop distance.
         </p>
 
         <label className="mb-3 block text-xs text-slate-300">
@@ -289,6 +315,7 @@ export function TravelPanel() {
                   key={index}
                   hop={index + 1}
                   stars={stars}
+                  legByStarId={expansionLegByStarId}
                   selectedStarId={selectedStarId}
                   onSelect={setSelectedStarId}
                 />

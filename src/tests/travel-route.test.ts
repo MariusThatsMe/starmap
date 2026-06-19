@@ -102,7 +102,7 @@ describe('computeExpansionReach', () => {
     expect(reach.hopByStarId.island).toBeUndefined();
   });
 
-  it('reconstructs a colonization path through the BFS tree', () => {
+  it('reconstructs a travel path through the BFS tree', () => {
     const reach = computeExpansionReach(catalog, sol, 2, 3);
     expect(reach).not.toBeNull();
     if (!reach) return;

@@ -92,6 +92,12 @@ export function ControlsPanel() {
             />
           )}
           <ToggleRow
+            label="Galactic orientation arrows"
+            checked={toggles.showGalacticArrows}
+            onChange={(v) => setToggle('showGalacticArrows', v)}
+            hint="Core and north on the chart plane"
+          />
+          <ToggleRow
             label="Nearest-neighbor lines"
             checked={toggles.showHoverNearestLines}
             onChange={(v) => setToggle('showHoverNearestLines', v)}

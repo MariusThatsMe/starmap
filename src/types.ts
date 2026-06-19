@@ -54,4 +54,5 @@ export type DisplayToggles = {
   alwaysHighlightSol: boolean;
   showLineToSol: boolean;
   showAllStarNames: boolean;
+  showGalacticArrows: boolean;
 };

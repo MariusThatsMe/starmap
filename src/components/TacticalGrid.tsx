@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { StraightLineMesh } from './LineMesh';
 import { BillboardText } from './BillboardText';
+import { GalacticOrientationArrows } from './GalacticOrientationArrows';
 import { useStarMapStore } from '../state/useStarMapStore';
 import * as THREE from 'three';
 import { toThreePosition } from '../utils/coordinate-render';
@@ -22,6 +23,7 @@ function gridMaterial(color: string, opacity: number) {
 export function TacticalGrid() {
   const maxRange = useStarMapStore((s) => s.maxDisplayRangeLy);
   const ringStep = useStarMapStore((s) => s.ringStepLy);
+  const showGalacticArrows = useStarMapStore((s) => s.toggles.showGalacticArrows);
   const focusPos = useStarMapStore((s) => s.focusStar.positionLy);
   const [fx, fy, fz] = toThreePosition(focusPos);
 
@@ -80,6 +82,8 @@ export function TacticalGrid() {
           {`${r} ly`}
         </BillboardText>
       ))}
+
+      {showGalacticArrows && <GalacticOrientationArrows outerRadius={outerRadius} />}
     </group>
   );
 }
