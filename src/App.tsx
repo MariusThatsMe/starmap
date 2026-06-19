@@ -18,13 +18,13 @@ function App() {
       <header className="relative z-30 shrink-0 border-b border-slate-800 bg-slate-900/80 px-4 py-3 backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-lg font-bold text-white">Local Stars Tactical Projection</h1>
+            <h1 className="text-lg font-bold text-white">3D Stellar Projection Map</h1>
             <p className="text-xs text-slate-400">
               Range-preserving star map centered on{' '}
               <span className="text-sky-400">{focusStar.name}</span>
             </p>
             <p className="text-[10px] text-slate-500">
-              Azimuthal equidistant tactical plane · {catalog.length.toLocaleString()} stars loaded
+              Azimuthal equidistant projection · {catalog.length.toLocaleString()} stars loaded
               (≤ 25 pc)
             </p>
           </div>

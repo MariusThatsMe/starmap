@@ -23,7 +23,7 @@ export function ControlsPanel() {
           {(
             [
               ['oblique', 'Oblique 3D'],
-              ['topdown', 'Top-down tactical'],
+              ['topdown', 'Top-down chart'],
               ['side', 'Side elevation'],
               ['reset', 'Reset camera'],
             ] as [ViewPreset, string][]
@@ -155,7 +155,7 @@ export function ControlsPanel() {
       </section>
 
       <p className="text-[10px] text-slate-500 border-t border-slate-700 pt-2">
-        Projection: Azimuthal equidistant tactical plane
+        Projection: Azimuthal equidistant plane
       </p>
     </div>
   );
