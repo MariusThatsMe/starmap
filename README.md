@@ -1,73 +1,47 @@
-# React + TypeScript + Vite
+# 3D Stellar Projection Map
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Live demo:** [mariusthatsme.github.io/starmap](https://mariusthatsme.github.io/starmap/)
 
-Currently, two official plugins are available:
+An interactive map of nearby stars that shows each star’s true position in 3D space and how it appears on a flat chart—without distorting distance.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it does
 
-## React Compiler
+Most flat star maps treat height above or below the chart plane as something to ignore. Drop a star straight down onto the grid and you get its *horizontal* distance, not how far away it really is.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+This viewer uses a **range-preserving projection**: each star’s position on the flat chart is placed at the same radial distance from the focus star as its true 3D distance. Curved **elevation arcs** connect the real star to its chart position, so you can see how “height” is folded onto the plane.
 
-## Expanding the ESLint configuration
+By default the map is centered on **Sol**, showing the nearest stars from a catalog of everything within 25 parsecs (~3,000 stars). You can click any star and **focus** the map on it to explore its neighborhood.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Features
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **3D view** — real star positions with spectral colors and brightness-scaled markers
+- **Projection chart** — grid points on an azimuthal equidistant plane where radial distance equals true 3D distance
+- **Elevation arcs** — curved connectors from each star to its projected position
+- **Refocus** — re-center on any star; distances and neighbors recompute automatically
+- **Search** — find stars by name or catalog ID (HIP, HD, Gliese, etc.)
+- **Hover neighbor lines** — optional lines to the N nearest stars with distance labels
+- **Comparison mode** — optional straight drop-lines to show why conventional footprints mislead
+- **Display toggles** — labels, Sol highlight, neighbor limits, range filters, camera presets
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Data
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Star positions come from the [HYG database](https://www.astronexus.com/projects/hyg) (v4.2), converted from parsecs to light-years. The bundled catalog includes all HYG stars within 25 pc of Sol.
+
+To regenerate the catalog from a HYG CSV:
+
+```bash
+npm run generate-catalog -- /path/to/hyg_v42.csv
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Running locally
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
+
+Open [http://localhost:5173](http://localhost:5173). Run tests with `npm test`.
+
+## Tech
+
+React, TypeScript, Vite, Three.js ([React Three Fiber](https://github.com/pmndrs/react-three-fiber) + [drei](https://github.com/pmndrs/drei)), Tailwind CSS, Zustand. Projection math lives in `src/math/` with Vitest unit tests. Deployed to GitHub Pages via GitHub Actions.
