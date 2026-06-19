@@ -69,6 +69,14 @@ export function ControlsPanel() {
             checked={toggles.showLabels}
             onChange={(v) => setToggle('showLabels', v)}
           />
+          {toggles.showLabels && (
+            <ToggleRow
+              label="Show all star names"
+              checked={toggles.showAllStarNames}
+              onChange={(v) => setToggle('showAllStarNames', v)}
+              hint="Off: only nearby major stars and selection"
+            />
+          )}
           <ToggleRow
             label="Always highlight Sol"
             checked={toggles.alwaysHighlightSol}

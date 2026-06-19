@@ -149,6 +149,16 @@ function SceneContent() {
     focusStar.id !== 'sol' &&
     !solInNeighborSet;
 
+  const shouldShowLabel = useCallback(
+    (starId: string) => {
+      if (!toggles.showLabels) return false;
+      if (toggles.showAllStarNames) return true;
+      if (toggles.alwaysHighlightSol && starId === 'sol') return true;
+      return labelStars.some((ls) => ls.star.id === starId);
+    },
+    [toggles.showLabels, toggles.showAllStarNames, toggles.alwaysHighlightSol, labelStars],
+  );
+
   return (
     <>
       <ambientLight intensity={0.35} />
@@ -165,6 +175,10 @@ function SceneContent() {
           {...focusHandlers}
         />
 
+        {shouldShowLabel(focusStar.id) && (
+          <StarLabel star={focusStar} position={toThreePosition(focusStar.positionLy)} />
+        )}
+
         <HoverNearestLines hoveredStar={hoveredStar} />
 
         {showStandaloneSol && toggles.showRealStars && solStar && (
@@ -177,7 +191,7 @@ function SceneContent() {
               isHovered={hoveredStarId === 'sol'}
               {...handleStarInteraction('sol')}
             />
-            {toggles.showLabels && (
+            {shouldShowLabel('sol') && (
               <StarLabel star={solStar} position={toThreePosition(solStar.positionLy)} />
             )}
           </>
@@ -227,11 +241,7 @@ function SceneContent() {
                 />
               )}
 
-              {toggles.showLabels &&
-                (labelStars.some((ls) => ls.star.id === id) ||
-                  (toggles.alwaysHighlightSol && id === 'sol')) && (
-                <StarLabel star={p.star} position={real} />
-              )}
+              {shouldShowLabel(id) && <StarLabel star={p.star} position={real} />}
             </group>
           );
         })}
