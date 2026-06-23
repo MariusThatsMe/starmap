@@ -409,7 +409,13 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
       color: color ?? pickDefaultEmpireColor(empires),
     };
     const nextEmpires = [...empires, nextEmpire];
-    set({ empires: nextEmpires });
+    const isFirstEmpire = empires.length === 0;
+    set({
+      empires: nextEmpires,
+      ...(isFirstEmpire
+        ? { toggles: { ...get().toggles, showPoliticalLayer: true } }
+        : {}),
+    });
     persistCampaign(nextEmpires, get().starAssignments);
     return id;
   },
@@ -528,6 +534,9 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
       starAssignments,
       highlightedEmpireId: null,
       paintEmpireId: null,
+      ...(empires.length > 0
+        ? { toggles: { ...get().toggles, showPoliticalLayer: true } }
+        : {}),
     });
     persistCampaign(empires, starAssignments);
   },

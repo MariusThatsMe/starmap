@@ -72,7 +72,7 @@ function HopGroupList({
   );
 }
 
-export function TravelPanel() {
+export function TravelPanel({ embedded = false }: { embedded?: boolean }) {
   const focusStar = useStarMapStore((s) => s.focusStar);
   const selectedStarId = useStarMapStore((s) => s.selectedStarId);
   const catalog = useStarMapStore((s) => s.catalog);
@@ -129,11 +129,20 @@ export function TravelPanel() {
     selectedStar !== undefined && selectedStar.id !== focusStar.id && maxHopLy > 0;
 
   return (
-    <section className="mt-3 border-t border-slate-700 pt-3">
-      <h3 className="text-sm font-semibold text-white mb-1">Travel</h3>
-      <p className="text-xs text-slate-400 mb-3">
-        Plan a shortest hop-by-hop route from {focusStar.name} to a selected destination.
-      </p>
+    <section className={embedded ? '' : 'mt-3 border-t border-slate-700 pt-3'}>
+      {!embedded && (
+        <>
+          <h3 className="text-sm font-semibold text-white mb-1">Travel</h3>
+          <p className="text-xs text-slate-400 mb-3">
+            Plan a shortest hop-by-hop route from {focusStar.name} to a selected destination.
+          </p>
+        </>
+      )}
+      {embedded && (
+        <p className="text-xs text-slate-400 mb-3">
+          Plan a shortest hop-by-hop route from {focusStar.name} to a selected destination.
+        </p>
+      )}
 
       <label className="mb-3 block text-xs text-slate-300">
         <span className="mb-1 block text-slate-400">Max hop distance</span>

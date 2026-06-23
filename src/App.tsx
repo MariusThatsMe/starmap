@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStarMapStore } from './state/useStarMapStore';
 import { StarMapCanvas } from './components/StarMapCanvas';
 import { FocusPanel } from './components/FocusPanel';
 import { ControlsPanel } from './components/ControlsPanel';
 import { EmpiresPanel } from './components/EmpiresPanel';
 import { SearchBox } from './components/SearchBox';
+import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 
 function App() {
   const hydrateCampaignFromStorage = useStarMapStore((s) => s.hydrateCampaignFromStorage);
@@ -19,7 +20,8 @@ function App() {
 
   const selectedProjected =
     projectedStars.find((p) => p.star.id === selectedStarId) ?? null;
-  const showPoliticalLayer = useStarMapStore((s) => s.toggles.showPoliticalLayer);
+  const [settingsSidebarOpen, setSettingsSidebarOpen] = useState(true);
+  const [focusSidebarOpen, setFocusSidebarOpen] = useState(true);
 
   return (
     <div className="flex h-screen flex-col bg-slate-950 text-slate-200">
@@ -41,18 +43,32 @@ function App() {
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-72 shrink-0 overflow-y-auto border-r border-slate-800 p-3 lg:block space-y-3">
+        <CollapsibleSidebar
+          side="left"
+          open={settingsSidebarOpen}
+          onToggle={() => setSettingsSidebarOpen((open) => !open)}
+          widthClass="w-72"
+          breakpointClass="hidden lg:flex"
+          label="settings"
+        >
           <ControlsPanel />
-          {showPoliticalLayer && <EmpiresPanel />}
-        </aside>
+          <EmpiresPanel />
+        </CollapsibleSidebar>
 
         <main className="relative z-0 min-w-0 flex-1">
           <StarMapCanvas />
         </main>
 
-        <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-slate-800 p-3 xl:block">
+        <CollapsibleSidebar
+          side="right"
+          open={focusSidebarOpen}
+          onToggle={() => setFocusSidebarOpen((open) => !open)}
+          widthClass="w-80"
+          breakpointClass="hidden xl:flex"
+          label="focus panel"
+        >
           <FocusPanel projected={selectedProjected} />
-        </aside>
+        </CollapsibleSidebar>
       </div>
 
       <div className="shrink-0 border-t border-slate-800 p-3 lg:hidden">
@@ -62,14 +78,12 @@ function App() {
             <ControlsPanel />
           </div>
         </details>
-        {showPoliticalLayer && (
-          <details className="mb-2">
-            <summary className="cursor-pointer text-sm text-slate-300">Empires</summary>
-            <div className="mt-2">
-              <EmpiresPanel />
-            </div>
-          </details>
-        )}
+        <details className="mb-2">
+          <summary className="cursor-pointer text-sm text-slate-300">Empires</summary>
+          <div className="mt-2">
+            <EmpiresPanel />
+          </div>
+        </details>
         <FocusPanel projected={selectedProjected} />
       </div>
     </div>

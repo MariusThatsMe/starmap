@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStarMapStore } from '../state/useStarMapStore';
+import type { DisplayToggles } from '../types';
 import {
   buildCampaignExport,
   countStarsPerEmpire,
@@ -11,8 +12,47 @@ import {
   chartSvgFilename,
   downloadChartSvg,
 } from '../utils/chart-svg-export';
+import { CollapsibleSection } from './CollapsibleSection';
+import { ToggleRow } from './ToggleRow';
 
 const STAR_PREVIEW_LIMIT = 6;
+
+type EmpireDisplayPreset = Pick<
+  DisplayToggles,
+  | 'showEmpireTerritories'
+  | 'showEmpireInternalLines'
+  | 'showEmpireLabels'
+  | 'showEmpireBorders'
+  | 'showEmpireLegend'
+  | 'labelEmpireStarsOnly'
+>;
+
+const EMPIRE_DISPLAY_PRESETS: Record<string, EmpireDisplayPreset> = {
+  minimal: {
+    showEmpireTerritories: false,
+    showEmpireInternalLines: false,
+    showEmpireLabels: false,
+    showEmpireBorders: false,
+    showEmpireLegend: false,
+    labelEmpireStarsOnly: false,
+  },
+  standard: {
+    showEmpireTerritories: true,
+    showEmpireInternalLines: true,
+    showEmpireLabels: true,
+    showEmpireBorders: true,
+    showEmpireLegend: true,
+    labelEmpireStarsOnly: false,
+  },
+  full: {
+    showEmpireTerritories: true,
+    showEmpireInternalLines: true,
+    showEmpireLabels: true,
+    showEmpireBorders: true,
+    showEmpireLegend: true,
+    labelEmpireStarsOnly: true,
+  },
+};
 
 export function EmpiresPanel() {
   const empires = useStarMapStore((s) => s.empires);
@@ -106,110 +146,37 @@ export function EmpiresPanel() {
   };
 
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-4 text-xs text-slate-300 space-y-4 max-h-[70vh] overflow-y-auto">
-      <section>
+    <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-4 text-xs text-slate-300 space-y-1">
+      <div className="mb-3">
         <h3 className="text-slate-200 font-medium mb-1">Empires</h3>
-        <p className="text-[10px] text-slate-500 mb-3">
-          Group stars into factions for world-building. Assign via selection, paint mode, or the
-          focus panel.
+        <p className="text-[10px] text-slate-500">
+          Group stars into factions. Assign via selection, paint mode, or the focus panel.
         </p>
+      </div>
 
-        {paintEmpireId && (
-          <div className="mb-3 rounded border border-sky-700/60 bg-sky-950/30 px-2 py-1.5 text-[11px] text-sky-200">
-            Paint mode active. Click stars on the map to assign; shift+click to unassign.
-            <button
-              type="button"
-              onClick={() => setPaintEmpireId(null)}
-              className="ml-2 text-sky-400 underline hover:text-sky-300"
-            >
-              Exit
-            </button>
-          </div>
-        )}
-
-        <div className="space-y-1.5 mb-3">
-          <ToggleRow
-            label="Political layer"
-            checked={toggles.showPoliticalLayer}
-            onChange={(v) => setToggle('showPoliticalLayer', v)}
-            hint="Recolor assigned stars with empire colors"
-          />
-          {toggles.showPoliticalLayer && (
-            <>
-              <ToggleRow
-                label="Territory fill"
-                checked={toggles.showEmpireTerritories}
-                onChange={(v) => setToggle('showEmpireTerritories', v)}
-                hint="Semi-transparent regions on the chart plane"
-              />
-              <ToggleRow
-                label="Empire links"
-                checked={toggles.showEmpireInternalLines}
-                onChange={(v) => setToggle('showEmpireInternalLines', v)}
-                hint="Dashed lines between same-empire systems"
-              />
-              {toggles.showEmpireInternalLines && (
-                <>
-                  <ToggleRow
-                    label="Chart plane (2D)"
-                    checked={toggles.empireInternalLinksOnChartPlane}
-                    onChange={(v) => setToggle('empireInternalLinksOnChartPlane', v)}
-                    hint="Off draws true 3D links and borders between star positions"
-                    className="ml-5"
-                  />
-                  <ToggleRow
-                    label="All distances"
-                    checked={toggles.empireInternalLinksUnlimited}
-                    onChange={(v) => setToggle('empireInternalLinksUnlimited', v)}
-                    hint="Link every visible same-empire pair; off uses border distance"
-                    className="ml-5"
-                  />
-                </>
-              )}
-              <ToggleRow
-                label="Empire labels"
-                checked={toggles.showEmpireLabels}
-                onChange={(v) => setToggle('showEmpireLabels', v)}
-              />
-              <ToggleRow
-                label="Empire stars only"
-                checked={toggles.labelEmpireStarsOnly}
-                onChange={(v) => setToggle('labelEmpireStarsOnly', v)}
-                hint="Star name labels only on assigned systems (map and SVG export)"
-              />
-              <ToggleRow
-                label="Empire borders"
-                checked={toggles.showEmpireBorders}
-                onChange={(v) => setToggle('showEmpireBorders', v)}
-                hint="Dashed lines between rival systems (uses chart plane setting)"
-              />
-              <ToggleRow
-                label="Map legend"
-                checked={toggles.showEmpireLegend}
-                onChange={(v) => setToggle('showEmpireLegend', v)}
-              />
-            </>
-          )}
+      {paintEmpireId && (
+        <div className="mb-3 rounded border border-sky-700/60 bg-sky-950/30 px-2 py-1.5 text-[11px] text-sky-200">
+          Paint mode active. Click stars on the map to assign; shift+click to unassign.
+          <button
+            type="button"
+            onClick={() => setPaintEmpireId(null)}
+            className="ml-2 text-sky-400 underline hover:text-sky-300"
+          >
+            Exit
+          </button>
         </div>
+      )}
 
-        {toggles.showPoliticalLayer && toggles.showEmpireBorders && (
-          <label className="mb-3 block text-xs text-slate-300">
-            <span className="mb-1 block text-slate-400">Border distance</span>
-            <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min={2}
-                max={15}
-                step={0.5}
-                value={empireBorderMaxLy}
-                onChange={(e) => setEmpireBorderMaxLy(Number(e.target.value))}
-                className="min-w-0 flex-1 accent-slate-400"
-              />
-              <span className="w-12 text-right text-white">{empireBorderMaxLy} ly</span>
-            </div>
-          </label>
-        )}
+      <CollapsibleSection title="Display options">
+        <EmpireDisplayOptions
+          toggles={toggles}
+          empireBorderMaxLy={empireBorderMaxLy}
+          setToggle={setToggle}
+          setEmpireBorderMaxLy={setEmpireBorderMaxLy}
+        />
+      </CollapsibleSection>
 
+      <CollapsibleSection title="Your empires" defaultOpen>
         <div className="flex gap-2 mb-3">
           <input
             type="text"
@@ -302,27 +269,19 @@ export function EmpiresPanel() {
             ))}
           </div>
         )}
-      </section>
+      </CollapsibleSection>
 
-      <section className="border-t border-slate-700 pt-3">
-        <h4 className="text-slate-200 font-medium mb-2">Chart export</h4>
+      <CollapsibleSection title="Export & data">
         <p className="text-[10px] text-slate-500 mb-2">
-          Flat SVG map of the current view: grid, empires, travel route, and star names.
+          Campaign data is saved automatically in this browser.
         </p>
         <button
           type="button"
           onClick={handleExportSvg}
-          className="rounded bg-sky-800 px-3 py-1.5 text-xs text-sky-100 hover:bg-sky-700"
+          className="mb-3 rounded bg-sky-800 px-3 py-1.5 text-xs text-sky-100 hover:bg-sky-700"
         >
           Export chart SVG
         </button>
-      </section>
-
-      <section className="border-t border-slate-700 pt-3">
-        <h4 className="text-slate-200 font-medium mb-2">Campaign data</h4>
-        <p className="text-[10px] text-slate-500 mb-2">
-          Saved automatically in this browser. Export to share or back up.
-        </p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -362,8 +321,126 @@ export function EmpiresPanel() {
           }}
         />
         {importError && <p className="mt-2 text-xs text-amber-400/90">{importError}</p>}
-      </section>
+      </CollapsibleSection>
     </div>
+  );
+}
+
+function EmpireDisplayOptions({
+  toggles,
+  empireBorderMaxLy,
+  setToggle,
+  setEmpireBorderMaxLy,
+}: {
+  toggles: DisplayToggles;
+  empireBorderMaxLy: number;
+  setToggle: (key: keyof DisplayToggles, value: boolean) => void;
+  setEmpireBorderMaxLy: (ly: number) => void;
+}) {
+  const applyPreset = (preset: EmpireDisplayPreset) => {
+    setToggle('showPoliticalLayer', true);
+    for (const [key, value] of Object.entries(preset) as [keyof EmpireDisplayPreset, boolean][]) {
+      setToggle(key, value);
+    }
+  };
+
+  return (
+  <>
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {(['minimal', 'standard', 'full'] as const).map((name) => (
+          <button
+            key={name}
+            type="button"
+            onClick={() => applyPreset(EMPIRE_DISPLAY_PRESETS[name])}
+            className="rounded bg-slate-800 px-2 py-1 capitalize text-slate-200 hover:bg-slate-700"
+          >
+            {name}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-1.5">
+        <ToggleRow
+          label="Political layer"
+          checked={toggles.showPoliticalLayer}
+          onChange={(v) => setToggle('showPoliticalLayer', v)}
+          hint="Recolor assigned stars with empire colors"
+        />
+        {toggles.showPoliticalLayer && (
+          <>
+            <ToggleRow
+              label="Territory fill"
+              checked={toggles.showEmpireTerritories}
+              onChange={(v) => setToggle('showEmpireTerritories', v)}
+              hint="Semi-transparent regions on the chart plane"
+            />
+            <ToggleRow
+              label="Empire links"
+              checked={toggles.showEmpireInternalLines}
+              onChange={(v) => setToggle('showEmpireInternalLines', v)}
+              hint="Dashed lines between same-empire systems"
+            />
+            {toggles.showEmpireInternalLines && (
+              <>
+                <ToggleRow
+                  label="Chart plane (2D)"
+                  checked={toggles.empireInternalLinksOnChartPlane}
+                  onChange={(v) => setToggle('empireInternalLinksOnChartPlane', v)}
+                  hint="Off draws true 3D links and borders"
+                  className="ml-5"
+                />
+                <ToggleRow
+                  label="All distances"
+                  checked={toggles.empireInternalLinksUnlimited}
+                  onChange={(v) => setToggle('empireInternalLinksUnlimited', v)}
+                  hint="Link every visible pair; off uses border distance"
+                  className="ml-5"
+                />
+              </>
+            )}
+            <ToggleRow
+              label="Empire labels"
+              checked={toggles.showEmpireLabels}
+              onChange={(v) => setToggle('showEmpireLabels', v)}
+            />
+            <ToggleRow
+              label="Empire stars only"
+              checked={toggles.labelEmpireStarsOnly}
+              onChange={(v) => setToggle('labelEmpireStarsOnly', v)}
+              hint="Star name labels only on assigned systems"
+            />
+            <ToggleRow
+              label="Empire borders"
+              checked={toggles.showEmpireBorders}
+              onChange={(v) => setToggle('showEmpireBorders', v)}
+              hint="Dashed lines between rival systems"
+            />
+            {toggles.showEmpireBorders && (
+              <label className="ml-5 block text-xs text-slate-300">
+                <span className="mb-1 block text-slate-400">Border distance</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={2}
+                    max={15}
+                    step={0.5}
+                    value={empireBorderMaxLy}
+                    onChange={(e) => setEmpireBorderMaxLy(Number(e.target.value))}
+                    className="min-w-0 flex-1 accent-slate-400"
+                  />
+                  <span className="w-12 text-right text-white">{empireBorderMaxLy} ly</span>
+                </div>
+              </label>
+            )}
+            <ToggleRow
+              label="Map legend"
+              checked={toggles.showEmpireLegend}
+              onChange={(v) => setToggle('showEmpireLegend', v)}
+            />
+          </>
+        )}
+      </div>
+  </>
   );
 }
 
@@ -418,42 +495,62 @@ function EmpireCard({
           title="Empire color"
         />
         <div className="min-w-0 flex-1">
-          {editing ? (
-            <input
-              type="text"
-              value={draftName}
-              onChange={(e) => setDraftName(e.target.value)}
-              onBlur={() => {
-                onRename(draftName);
-                setEditing(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  onRename(draftName);
-                  setEditing(false);
-                }
-                if (e.key === 'Escape') {
-                  setDraftName(empire.name);
-                  setEditing(false);
-                }
-              }}
-              autoFocus
-              className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-slate-200"
+          <div className="flex items-center gap-1">
+            <div className="min-w-0 flex-1">
+              {editing ? (
+                <input
+                  type="text"
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  onBlur={() => {
+                    onRename(draftName);
+                    setEditing(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onRename(draftName);
+                      setEditing(false);
+                    }
+                    if (e.key === 'Escape') {
+                      setDraftName(empire.name);
+                      setEditing(false);
+                    }
+                  }}
+                  autoFocus
+                  className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-slate-200"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftName(empire.name);
+                    setEditing(true);
+                  }}
+                  className="block max-w-full truncate text-left text-sm font-medium text-white hover:text-sky-300"
+                >
+                  {empire.name}
+                </button>
+              )}
+            </div>
+            <EmpireActionsMenu
+              empireName={empire.name}
+              isHighlighted={isHighlighted}
+              isPainting={isPainting}
+              hasCapital={Boolean(empire.capitalStarId)}
+              canSetCapital={Boolean(
+                selectedStarId && stars.some((s) => s.id === selectedStarId),
+              )}
+              onPaint={onPaint}
+              onHighlight={onHighlight}
+              onSetCapital={() => selectedStarId && onSetCapital(selectedStarId)}
+              onClearCapital={onClearCapital}
+              onDelete={onDelete}
             />
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setDraftName(empire.name);
-                setEditing(true);
-              }}
-              className="text-left text-sm font-medium text-white hover:text-sky-300"
-            >
-              {empire.name}
-            </button>
-          )}
+          </div>
           <p className="text-[10px] text-slate-500">
             {starCount} system{starCount === 1 ? '' : 's'}
+            {isPainting && <span className="text-amber-400"> · painting</span>}
+            {isHighlighted && <span className="text-sky-400"> · focused</span>}
             {empire.capitalStarId && (
               <span className="text-slate-400">
                 {' '}
@@ -462,62 +559,6 @@ function EmpireCard({
               </span>
             )}
           </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-1">
-          <button
-            type="button"
-            onClick={onPaint}
-            className={`rounded px-2 py-1 text-[10px] ${
-              isPainting
-                ? 'bg-amber-600 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
-            title="Click stars on the map to assign to this empire"
-          >
-            {isPainting ? 'Painting' : 'Paint'}
-          </button>
-          <button
-            type="button"
-            onClick={onHighlight}
-            className={`rounded px-2 py-1 text-[10px] ${
-              isHighlighted
-                ? 'bg-sky-600 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
-            title="Highlight this empire on the map"
-          >
-            {isHighlighted ? 'Focused' : 'Focus'}
-          </button>
-          {selectedStarId && stars.some((s) => s.id === selectedStarId) && (
-            <button
-              type="button"
-              onClick={() => onSetCapital(selectedStarId)}
-              className="rounded bg-slate-700 px-2 py-1 text-[10px] text-slate-300 hover:bg-slate-600"
-              title="Set selected star as capital"
-            >
-              Capital
-            </button>
-          )}
-          {empire.capitalStarId && (
-            <button
-              type="button"
-              onClick={onClearCapital}
-              className="rounded bg-slate-800 px-2 py-1 text-[10px] text-slate-500 hover:bg-slate-700"
-            >
-              Clear cap.
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(`Delete ${empire.name}? Stars will be unassigned.`)) {
-                onDelete();
-              }
-            }}
-            className="rounded bg-slate-800 px-2 py-1 text-[10px] text-slate-500 hover:bg-slate-700 hover:text-slate-300"
-          >
-            Delete
-          </button>
         </div>
       </div>
 
@@ -548,31 +589,128 @@ function EmpireCard({
   );
 }
 
-function ToggleRow({
-  label,
-  checked,
-  onChange,
-  hint,
-  className,
+function EmpireActionsMenu({
+  empireName,
+  isHighlighted,
+  isPainting,
+  hasCapital,
+  canSetCapital,
+  onPaint,
+  onHighlight,
+  onSetCapital,
+  onClearCapital,
+  onDelete,
 }: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  hint?: string;
-  className?: string;
+  empireName: string;
+  isHighlighted: boolean;
+  isPainting: boolean;
+  hasCapital: boolean;
+  canSetCapital: boolean;
+  onPaint: () => void;
+  onHighlight: () => void;
+  onSetCapital: () => void;
+  onClearCapital: () => void;
+  onDelete: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [open]);
+
+  const run = (action: () => void) => {
+    action();
+    setOpen(false);
+  };
+
   return (
-    <label className={`flex items-start gap-2 cursor-pointer${className ? ` ${className}` : ''}`}>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5"
-      />
-      <span>
-        {label}
-        {hint && <span className="block text-[10px] text-amber-400/80">{hint}</span>}
-      </span>
-    </label>
+    <div ref={menuRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={`Actions for ${empireName}`}
+        className={`rounded px-1.5 py-0.5 text-sm leading-none ${
+          open || isPainting || isHighlighted
+            ? 'bg-slate-600 text-white'
+            : 'text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+        }`}
+      >
+        ⋯
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-20 mt-1 min-w-[10.5rem] rounded border border-slate-600 bg-slate-900 py-1 shadow-lg"
+        >
+          <MenuItem
+            label={isPainting ? 'Stop painting' : 'Paint'}
+            active={isPainting}
+            onClick={() => run(onPaint)}
+          />
+          <MenuItem
+            label={isHighlighted ? 'Unfocus' : 'Focus'}
+            active={isHighlighted}
+            onClick={() => run(onHighlight)}
+          />
+          {canSetCapital && (
+            <MenuItem label="Set capital" onClick={() => run(onSetCapital)} />
+          )}
+          {hasCapital && (
+            <MenuItem label="Clear capital" onClick={() => run(onClearCapital)} />
+          )}
+          <div className="my-1 border-t border-slate-700" />
+          <MenuItem
+            label="Delete empire"
+            destructive
+            onClick={() => {
+              setOpen(false);
+              if (window.confirm(`Delete ${empireName}? Stars will be unassigned.`)) {
+                onDelete();
+              }
+            }}
+          />
+        </div>
+      )}
+    </div>
   );
 }
+
+function MenuItem({
+  label,
+  active,
+  destructive,
+  onClick,
+}: {
+  label: string;
+  active?: boolean;
+  destructive?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className={`block w-full px-3 py-1.5 text-left text-[11px] ${
+        destructive
+          ? 'text-red-400 hover:bg-slate-800'
+          : active
+            ? 'bg-slate-800 text-white'
+            : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+

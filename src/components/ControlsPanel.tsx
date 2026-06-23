@@ -1,5 +1,7 @@
 import { useStarMapStore } from '../state/useStarMapStore';
 import type { ViewPreset } from '../types';
+import { CollapsibleSection } from './CollapsibleSection';
+import { ToggleRow } from './ToggleRow';
 
 const NEIGHBOR_OPTIONS = [25, 50, 100, 250, 0] as const;
 
@@ -16,9 +18,8 @@ export function ControlsPanel() {
   const catalog = useStarMapStore((s) => s.catalog);
 
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-4 text-xs text-slate-300 space-y-4 max-h-[70vh] overflow-y-auto">
-      <section>
-        <h3 className="text-slate-200 font-medium mb-2">Camera</h3>
+    <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-4 text-xs text-slate-300 space-y-1">
+      <CollapsibleSection title="Camera" defaultOpen>
         <div className="flex flex-wrap gap-1.5">
           {(
             [
@@ -38,13 +39,12 @@ export function ControlsPanel() {
             </button>
           ))}
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section>
-        <h3 className="text-slate-200 font-medium mb-2">Display</h3>
+      <CollapsibleSection title="Map content" defaultOpen>
         <div className="space-y-1.5">
           <ToggleRow
-            label="Real 3D star positions"
+            label="Real 3D positions"
             checked={toggles.showRealStars}
             onChange={(v) => setToggle('showRealStars', v)}
           />
@@ -54,45 +54,57 @@ export function ControlsPanel() {
             onChange={(v) => setToggle('showProjectedPoints', v)}
           />
           <ToggleRow
-            label="Show elevation arcs"
+            label="Elevation arcs"
             checked={toggles.showElevationArcs}
             onChange={(v) => setToggle('showElevationArcs', v)}
           />
           <ToggleRow
-            label="Show conventional straight drop-lines"
+            label="Drop-lines"
             checked={toggles.showDropLines}
             onChange={(v) => setToggle('showDropLines', v)}
             hint="Orthographic footprint, not true range"
           />
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Labels" defaultOpen>
+        <div className="space-y-1.5">
           <ToggleRow
-            label="Labels"
+            label="Star labels"
             checked={toggles.showLabels}
             onChange={(v) => setToggle('showLabels', v)}
           />
           {toggles.showLabels && (
             <ToggleRow
-              label="Show all star names"
+              label="All star names"
               checked={toggles.showAllStarNames}
               onChange={(v) => setToggle('showAllStarNames', v)}
               hint="Off: only nearby major stars and selection"
+              className="ml-5"
             />
           )}
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Overlays">
+        <div className="space-y-1.5">
           <ToggleRow
-            label="Always highlight Sol"
+            label="Highlight Sol"
             checked={toggles.alwaysHighlightSol}
             onChange={(v) => setToggle('alwaysHighlightSol', v)}
-            hint="Show Sol with a distinct marker even when not focused"
+            hint="Distinct marker even when not focused"
           />
           {toggles.alwaysHighlightSol && (
             <ToggleRow
-              label="Draw line to Sol"
+              label="Line to Sol"
               checked={toggles.showLineToSol}
               onChange={(v) => setToggle('showLineToSol', v)}
-              hint="Dashed line from focus star to Sol with distance"
+              hint="Dashed line with distance"
+              className="ml-5"
             />
           )}
           <ToggleRow
-            label="Galactic orientation arrows"
+            label="Galactic arrows"
             checked={toggles.showGalacticArrows}
             onChange={(v) => setToggle('showGalacticArrows', v)}
             hint="Core and north on the chart plane"
@@ -101,107 +113,80 @@ export function ControlsPanel() {
             label="Nearest-neighbor lines"
             checked={toggles.showHoverNearestLines}
             onChange={(v) => setToggle('showHoverNearestLines', v)}
-            hint="Amber: focus · Cyan: hover or selected when idle"
+            hint="Amber: focus · Cyan: hover or selected"
           />
-          <ToggleRow
-            label="Political layer"
-            checked={toggles.showPoliticalLayer}
-            onChange={(v) => setToggle('showPoliticalLayer', v)}
-            hint="Empire colors on assigned stars (manage in Empires panel)"
-          />
+          {toggles.showHoverNearestLines && (
+            <label className="ml-5 flex items-center gap-2 text-slate-300">
+              <span className="shrink-0 text-slate-400">Count (N)</span>
+              <input
+                type="number"
+                min={1}
+                max={Math.max(1, catalog.length - 1)}
+                value={hoverNearestLineCount}
+                onChange={(e) => {
+                  const parsed = parseInt(e.target.value, 10);
+                  if (Number.isNaN(parsed)) return;
+                  setHoverNearestLineCount(
+                    Math.min(Math.max(1, parsed), Math.max(1, catalog.length - 1)),
+                  );
+                }}
+                className="w-16 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-slate-200 focus:border-sky-500 focus:outline-none"
+              />
+            </label>
+          )}
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section>
-        <label className="flex items-center gap-2 text-slate-300">
-          <span className="text-slate-200 font-medium shrink-0">Neighbor list/lines (N)</span>
-          <input
-            type="number"
-            min={1}
-            max={Math.max(1, catalog.length - 1)}
-            value={hoverNearestLineCount}
-            onChange={(e) => {
-              const parsed = parseInt(e.target.value, 10);
-              if (Number.isNaN(parsed)) return;
-              setHoverNearestLineCount(
-                Math.min(Math.max(1, parsed), Math.max(1, catalog.length - 1)),
-              );
-            }}
-            className="w-20 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-slate-200 focus:border-sky-500 focus:outline-none"
-          />
-        </label>
-      </section>
+      <CollapsibleSection title="Stars & range" defaultOpen>
+        <div className="space-y-3">
+          <div>
+            <p className="mb-1.5 text-slate-400">Stars in view</p>
+            <div className="flex flex-wrap gap-1.5">
+              {NEIGHBOR_OPTIONS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setNeighborLimit(n === 0 ? catalog.length : n)}
+                  className={`rounded px-2 py-1 ${
+                    (n === 0 ? catalog.length : n) === neighborLimit
+                      ? 'bg-sky-600 text-white'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                  }`}
+                >
+                  {n === 0 ? 'All loaded' : n}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[10px] text-slate-500">
+              How many stars are included in the projection
+            </p>
+          </div>
 
-      <section>
-        <h3 className="text-slate-200 font-medium mb-2">Neighbors</h3>
-        <div className="flex flex-wrap gap-1.5">
-          {NEIGHBOR_OPTIONS.map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setNeighborLimit(n === 0 ? catalog.length : n)}
-              className={`rounded px-2 py-1 ${
-                (n === 0 ? catalog.length : n) === neighborLimit
-                  ? 'bg-sky-600 text-white'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-              }`}
-            >
-              {n === 0 ? 'All loaded' : n}
-            </button>
-          ))}
+          <div>
+            <p className="mb-1.5 text-slate-400">Range filter (ly)</p>
+            <div className="flex flex-wrap gap-1.5">
+              {[undefined, 5, 10, 15, 20, 25].map((r) => (
+                <button
+                  key={r ?? 'all'}
+                  type="button"
+                  onClick={() => setMaxRangeLy(r)}
+                  className={`rounded px-2 py-1 ${
+                    maxRangeLy === r
+                      ? 'bg-sky-600 text-white'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                  }`}
+                >
+                  {r === undefined ? 'No limit' : `≤ ${r} ly`}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section>
-        <h3 className="text-slate-200 font-medium mb-2">Range filter (ly)</h3>
-        <div className="flex flex-wrap gap-1.5">
-          {[undefined, 5, 10, 15, 20, 25].map((r) => (
-            <button
-              key={r ?? 'all'}
-              type="button"
-              onClick={() => setMaxRangeLy(r)}
-              className={`rounded px-2 py-1 ${
-                maxRangeLy === r
-                  ? 'bg-sky-600 text-white'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-              }`}
-            >
-              {r === undefined ? 'No limit' : `≤ ${r} ly`}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <p className="text-[10px] text-slate-500 border-t border-slate-700 pt-2">
+      <p className="text-[10px] text-slate-500 border-t border-slate-700 pt-3">
         Projection: Azimuthal equidistant plane
       </p>
     </div>
-  );
-}
-
-function ToggleRow({
-  label,
-  checked,
-  onChange,
-  hint,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  hint?: string;
-}) {
-  return (
-    <label className="flex items-start gap-2 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5"
-      />
-      <span>
-        {label}
-        {hint && <span className="block text-[10px] text-amber-400/80">{hint}</span>}
-      </span>
-    </label>
   );
 }

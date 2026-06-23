@@ -61,7 +61,7 @@ export function FocusPanel({ projected }: Props) {
   const catalogLimited = useStarMapStore((s) => s.catalogLimited);
 
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-4 text-sm text-slate-300 max-h-[70vh] overflow-y-auto">
+    <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-4 text-sm text-slate-300">
       <h2 className="text-base font-semibold text-white mb-1">Focus: {focusStar.name}</h2>
       {focusStar.altNames && focusStar.altNames.length > 0 && (
         <p className="text-xs text-slate-400 mb-2">{focusStar.altNames.join(' · ')}</p>
@@ -110,7 +110,12 @@ export function FocusPanel({ projected }: Props) {
         />
       )}
 
-      <TravelPanel />
+      <details className="mt-3 border-t border-slate-700 pt-3">
+        <summary className="cursor-pointer text-sm font-semibold text-white">Travel</summary>
+        <div className="mt-2">
+          <TravelPanel embedded />
+        </div>
+      </details>
     </div>
   );
 }
