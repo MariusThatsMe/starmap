@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { Html } from '@react-three/drei';
 import { useStarMapStore } from '../state/useStarMapStore';
 import { computeEmpireLabelAnchors, projectedStarsIncludingFocus } from '../utils/empires';
-import { toThreePosition } from '../utils/coordinate-render';
 
 export function EmpireLabels() {
   const toggles = useStarMapStore((s) => s.toggles);
@@ -37,11 +36,7 @@ export function EmpireLabels() {
       {visibleAnchors.map((anchor) => (
         <Html
           key={anchor.empireId}
-          position={toThreePosition({
-            x: anchor.position[0],
-            y: anchor.position[1],
-            z: anchor.position[2],
-          })}
+          position={anchor.position}
           center
           distanceFactor={14}
           style={{ pointerEvents: 'none' }}

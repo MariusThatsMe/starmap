@@ -1,7 +1,30 @@
 import type { Empire, ProjectedStar, Star } from '../types';
+import { convexHull2D } from '../math/convex-hull';
 import { hashToAzimuth, distance } from '../math/vector';
 import { getStarPosition } from '../math/nearest-neighbors';
 import { NATIVE_XY_PLANE, projectStarToTacticalPlane } from '../math/projection';
+import { toThreePosition } from './coordinate-render';
+
+/** Slight lift above the chart plane to avoid z-fighting with the grid. */
+export const EMPIRE_MAP_LIFT = 0.03;
+
+/** Range-preserving chart position for a projected star (Three.js scene coords). */
+export function toMapPosition(projected: ProjectedStar): [number, number, number] {
+  const [x, y, z] = toThreePosition(projected.projectedPosition);
+  return [x, y + EMPIRE_MAP_LIFT, z];
+}
+
+/** True 3D star position in Three.js scene coords. */
+export function toRealScenePosition(projected: ProjectedStar): [number, number, number] {
+  return toThreePosition(projected.realPosition);
+}
+
+export function empireLinkEndpoint(
+  projected: ProjectedStar,
+  onChartPlane: boolean,
+): [number, number, number] {
+  return onChartPlane ? toMapPosition(projected) : toRealScenePosition(projected);
+}
 
 export const DEFAULT_EMPIRE_COLORS = [
   '#ef4444',
@@ -43,6 +66,12 @@ export type EmpireLabelAnchor = {
   color: string;
   position: [number, number, number];
   starCount: number;
+};
+
+export type EmpireTerritory = {
+  empireId: string;
+  color: string;
+  positions: [number, number, number][];
 };
 
 export function pickDefaultEmpireColor(existingEmpires: Empire[]): string {
@@ -104,6 +133,7 @@ export function computeEmpireBorderSegments(
   projectedStars: ProjectedStar[],
   starAssignments: Record<string, string | null>,
   maxDistanceLy: number,
+  onChartPlane = false,
 ): EmpireBorderSegment[] {
   const segments: EmpireBorderSegment[] = [];
   const seen = new Set<string>();
@@ -126,10 +156,12 @@ export function computeEmpireBorderSegments(
       seen.add(pairKey);
 
       const [empireLo, empireHi] = [empireA, empireB].sort();
+      const from = empireLinkEndpoint(a, onChartPlane);
+      const to = empireLinkEndpoint(b, onChartPlane);
       segments.push({
         key: `${pairKey}:${empireLo}:${empireHi}`,
-        from: [a.realPosition.x, a.realPosition.y, a.realPosition.z],
-        to: [b.realPosition.x, b.realPosition.y, b.realPosition.z],
+        from,
+        to,
         empireAId: empireA,
         empireBId: empireB,
       });
@@ -143,6 +175,7 @@ export function computeEmpireInternalSegments(
   projectedStars: ProjectedStar[],
   starAssignments: Record<string, string | null>,
   maxDistanceLy: number,
+  onChartPlane = false,
 ): EmpireInternalSegment[] {
   const segments: EmpireInternalSegment[] = [];
   const seen = new Set<string>();
@@ -163,10 +196,12 @@ export function computeEmpireInternalSegments(
       if (seen.has(pairKey)) continue;
       seen.add(pairKey);
 
+      const from = empireLinkEndpoint(a, onChartPlane);
+      const to = empireLinkEndpoint(b, onChartPlane);
       segments.push({
         key: `${pairKey}:${empireId}`,
-        from: [a.realPosition.x, a.realPosition.y, a.realPosition.z],
-        to: [b.realPosition.x, b.realPosition.y, b.realPosition.z],
+        from,
+        to,
         empireId,
       });
     }
@@ -203,12 +238,11 @@ export function computeEmpireLabelAnchors(
       if (empire.capitalStarId) {
         const capital = projectedById.get(empire.capitalStarId);
         if (capital) {
-          const pos = capital.realPosition;
           return {
             empireId: empire.id,
             name: empire.name,
             color: empire.color,
-            position: [pos.x, pos.y, pos.z] as [number, number, number],
+            position: toMapPosition(capital),
             starCount: members.length,
           };
         }
@@ -218,9 +252,10 @@ export function computeEmpireLabelAnchors(
       let y = 0;
       let z = 0;
       for (const member of members) {
-        x += member.realPosition.x;
-        y += member.realPosition.y;
-        z += member.realPosition.z;
+        const [mx, my, mz] = toMapPosition(member);
+        x += mx;
+        y += my;
+        z += mz;
       }
       const n = members.length;
 
@@ -233,6 +268,56 @@ export function computeEmpireLabelAnchors(
       };
     })
     .filter((anchor): anchor is EmpireLabelAnchor => anchor !== null);
+}
+
+export function computeEmpireTerritories(
+  projectedStars: ProjectedStar[],
+  empires: Empire[],
+  starAssignments: Record<string, string | null>,
+): EmpireTerritory[] {
+  const buckets = new Map<string, ProjectedStar[]>();
+
+  for (const projected of projectedStars) {
+    const empireId = starAssignments[projected.star.id];
+    if (!empireId) continue;
+    const list = buckets.get(empireId) ?? [];
+    list.push(projected);
+    buckets.set(empireId, list);
+  }
+
+  return empires.flatMap((empire) => {
+    const members = buckets.get(empire.id);
+    if (!members || members.length === 0) return [];
+
+    const mapPoints = members.map((member) => toMapPosition(member));
+
+    if (members.length >= 3) {
+      const hull = convexHull2D(mapPoints.map(([x, , z]) => ({ x, y: z })));
+      if (hull.length < 3) return [];
+      const liftY = mapPoints[0][1];
+      return [
+        {
+          empireId: empire.id,
+          color: empire.color,
+          positions: hull.map(({ x, y }) => [x, liftY, y] as [number, number, number]),
+        },
+      ];
+    }
+
+    const cx = mapPoints.reduce((sum, [x]) => sum + x, 0) / mapPoints.length;
+    const cz = mapPoints.reduce((sum, [, , z]) => sum + z, 0) / mapPoints.length;
+    const liftY = mapPoints[0][1];
+    const radius =
+      Math.max(...mapPoints.map(([x, , z]) => Math.hypot(x - cx, z - cz)), 0.35) + 0.75;
+    const segments = 24;
+    const positions: [number, number, number][] = [];
+    for (let i = 0; i < segments; i++) {
+      const angle = (i / segments) * Math.PI * 2;
+      positions.push([cx + Math.cos(angle) * radius, liftY, cz + Math.sin(angle) * radius]);
+    }
+
+    return [{ empireId: empire.id, color: empire.color, positions }];
+  });
 }
 
 export function parseCampaignExport(data: unknown): CampaignExport | null {

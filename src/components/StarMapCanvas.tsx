@@ -15,6 +15,7 @@ import { TravelRouteLines } from './TravelRouteLines';
 import { ExpansionReachLines } from './ExpansionReachLines';
 import { EmpireBorderLines } from './EmpireBorderLines';
 import { EmpireInternalLines } from './EmpireInternalLines';
+import { EmpireTerritories } from './EmpireTerritories';
 import { EmpireLabels } from './EmpireLabels';
 import { EmpireLegend } from './EmpireLegend';
 import { DashedLineMesh } from './LineMesh';
@@ -219,11 +220,24 @@ function SceneContent() {
   const shouldShowLabel = useCallback(
     (starId: string) => {
       if (!toggles.showLabels) return false;
+      const empireOnly =
+        toggles.showPoliticalLayer &&
+        toggles.labelEmpireStarsOnly &&
+        !starAssignments[starId];
+      if (empireOnly) return false;
       if (toggles.showAllStarNames) return true;
       if (toggles.alwaysHighlightSol && starId === 'sol') return true;
       return labelStars.some((ls) => ls.star.id === starId);
     },
-    [toggles.showLabels, toggles.showAllStarNames, toggles.alwaysHighlightSol, labelStars],
+    [
+      toggles.showLabels,
+      toggles.showPoliticalLayer,
+      toggles.labelEmpireStarsOnly,
+      toggles.showAllStarNames,
+      toggles.alwaysHighlightSol,
+      labelStars,
+      starAssignments,
+    ],
   );
 
   return (
@@ -269,6 +283,8 @@ function SceneContent() {
         <TravelRouteLines />
 
         <ExpansionReachLines />
+
+        <EmpireTerritories />
 
         <EmpireInternalLines />
 

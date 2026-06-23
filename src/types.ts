@@ -73,6 +73,9 @@ export type DisplayToggles = {
   showEmpireLabels: boolean;
   showEmpireBorders: boolean;
   showEmpireInternalLines: boolean;
+  showEmpireTerritories: boolean;
+  empireInternalLinksOnChartPlane: boolean;
   empireInternalLinksUnlimited: boolean;
   showEmpireLegend: boolean;
+  labelEmpireStarsOnly: boolean;
 };

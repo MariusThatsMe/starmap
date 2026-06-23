@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useStarMapStore } from '../state/useStarMapStore';
 import { computeEmpireBorderSegments, projectedStarsIncludingFocus } from '../utils/empires';
-import { toThreePosition } from '../utils/coordinate-render';
 import { DashedLineMesh } from './LineMesh';
 
 export function EmpireBorderLines() {
@@ -15,10 +14,16 @@ export function EmpireBorderLines() {
   const segments = useMemo(() => {
     if (!toggles.showPoliticalLayer || !toggles.showEmpireBorders) return [];
     const stars = projectedStarsIncludingFocus(projectedStars, focusStar);
-    return computeEmpireBorderSegments(stars, starAssignments, empireBorderMaxLy);
+    return computeEmpireBorderSegments(
+      stars,
+      starAssignments,
+      empireBorderMaxLy,
+      toggles.empireInternalLinksOnChartPlane,
+    );
   }, [
     toggles.showPoliticalLayer,
     toggles.showEmpireBorders,
+    toggles.empireInternalLinksOnChartPlane,
     projectedStars,
     focusStar,
     starAssignments,
@@ -41,16 +46,8 @@ export function EmpireBorderLines() {
       {filteredSegments.map((segment) => (
         <DashedLineMesh
           key={segment.key}
-          from={toThreePosition({
-            x: segment.from[0],
-            y: segment.from[1],
-            z: segment.from[2],
-          })}
-          to={toThreePosition({
-            x: segment.to[0],
-            y: segment.to[1],
-            z: segment.to[2],
-          })}
+          from={segment.from}
+          to={segment.to}
           color="#e2e8f0"
           opacity={0.65}
           radius={0.01}

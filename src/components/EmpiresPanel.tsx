@@ -6,6 +6,11 @@ import {
   parseCampaignExport,
   starsForEmpire,
 } from '../utils/empires';
+import {
+  buildChartSvg,
+  chartSvgFilename,
+  downloadChartSvg,
+} from '../utils/chart-svg-export';
 
 const STAR_PREVIEW_LIMIT = 6;
 
@@ -30,6 +35,11 @@ export function EmpiresPanel() {
   const setPaintEmpireId = useStarMapStore((s) => s.setPaintEmpireId);
   const setEmpireCapital = useStarMapStore((s) => s.setEmpireCapital);
   const setSelectedStarId = useStarMapStore((s) => s.setSelectedStarId);
+  const focusStar = useStarMapStore((s) => s.focusStar);
+  const projectedStars = useStarMapStore((s) => s.projectedStars);
+  const maxDisplayRangeLy = useStarMapStore((s) => s.maxDisplayRangeLy);
+  const ringStepLy = useStarMapStore((s) => s.ringStepLy);
+  const travelRoute = useStarMapStore((s) => s.travelRoute);
 
   const [newEmpireName, setNewEmpireName] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
@@ -49,6 +59,24 @@ export function EmpiresPanel() {
     if (selectedStarId && !selectedStarEmpireId) {
       assignStarToEmpire(selectedStarId, id);
     }
+  };
+
+  const handleExportSvg = () => {
+    const svg = buildChartSvg(
+      {
+        focusStar,
+        projectedStars,
+        empires,
+        starAssignments,
+        travelRoute,
+        maxDisplayRangeLy,
+        ringStepLy,
+        empireBorderMaxLy,
+        empireInternalLinksUnlimited: toggles.empireInternalLinksUnlimited,
+      },
+      { labelAssignedOnly: toggles.labelEmpireStarsOnly },
+    );
+    downloadChartSvg(svg, chartSvgFilename(focusStar));
   };
 
   const handleExport = () => {
@@ -109,19 +137,34 @@ export function EmpiresPanel() {
           {toggles.showPoliticalLayer && (
             <>
               <ToggleRow
+                label="Territory fill"
+                checked={toggles.showEmpireTerritories}
+                onChange={(v) => setToggle('showEmpireTerritories', v)}
+                hint="Semi-transparent regions on the chart plane"
+              />
+              <ToggleRow
                 label="Empire links"
                 checked={toggles.showEmpireInternalLines}
                 onChange={(v) => setToggle('showEmpireInternalLines', v)}
-                hint="Dashed 3D lines between same-empire systems"
+                hint="Dashed lines between same-empire systems"
               />
               {toggles.showEmpireInternalLines && (
-                <ToggleRow
-                  label="All distances"
-                  checked={toggles.empireInternalLinksUnlimited}
-                  onChange={(v) => setToggle('empireInternalLinksUnlimited', v)}
-                  hint="Link every visible same-empire pair; off uses border distance"
-                  className="ml-5"
-                />
+                <>
+                  <ToggleRow
+                    label="Chart plane (2D)"
+                    checked={toggles.empireInternalLinksOnChartPlane}
+                    onChange={(v) => setToggle('empireInternalLinksOnChartPlane', v)}
+                    hint="Off draws true 3D links and borders between star positions"
+                    className="ml-5"
+                  />
+                  <ToggleRow
+                    label="All distances"
+                    checked={toggles.empireInternalLinksUnlimited}
+                    onChange={(v) => setToggle('empireInternalLinksUnlimited', v)}
+                    hint="Link every visible same-empire pair; off uses border distance"
+                    className="ml-5"
+                  />
+                </>
               )}
               <ToggleRow
                 label="Empire labels"
@@ -129,10 +172,16 @@ export function EmpiresPanel() {
                 onChange={(v) => setToggle('showEmpireLabels', v)}
               />
               <ToggleRow
+                label="Empire stars only"
+                checked={toggles.labelEmpireStarsOnly}
+                onChange={(v) => setToggle('labelEmpireStarsOnly', v)}
+                hint="Star name labels only on assigned systems (map and SVG export)"
+              />
+              <ToggleRow
                 label="Empire borders"
                 checked={toggles.showEmpireBorders}
                 onChange={(v) => setToggle('showEmpireBorders', v)}
-                hint="Lines between rival systems within border distance"
+                hint="Dashed lines between rival systems (uses chart plane setting)"
               />
               <ToggleRow
                 label="Map legend"
@@ -253,6 +302,20 @@ export function EmpiresPanel() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="border-t border-slate-700 pt-3">
+        <h4 className="text-slate-200 font-medium mb-2">Chart export</h4>
+        <p className="text-[10px] text-slate-500 mb-2">
+          Flat SVG map of the current view: grid, empires, travel route, and star names.
+        </p>
+        <button
+          type="button"
+          onClick={handleExportSvg}
+          className="rounded bg-sky-800 px-3 py-1.5 text-xs text-sky-100 hover:bg-sky-700"
+        >
+          Export chart SVG
+        </button>
       </section>
 
       <section className="border-t border-slate-700 pt-3">

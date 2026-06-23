@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import type { Empire, ProjectedStar, Star } from '../types';
+import { convexHull2D } from '../math/convex-hull';
 import {
   buildCampaignExport,
   computeEmpireBorderSegments,
   computeEmpireInternalSegments,
   computeEmpireLabelAnchors,
-  projectedStarsIncludingFocus,
+  computeEmpireTerritories,
   countStarsPerEmpire,
+  EMPIRE_MAP_LIFT,
   getEmpireForStar,
   isEmpireCapital,
   parseCampaignExport,
   pickDefaultEmpireColor,
+  projectedStarsIncludingFocus,
   starMatchesEmpireFilter,
+  toMapPosition,
 } from '../utils/empires';
 
 const starA: Star = {
@@ -39,16 +43,17 @@ const starD: Star = {
 };
 
 function projected(star: Star, x: number, y = 0): ProjectedStar {
+  const pos = { x, y, z: 0 };
   return {
     star,
-    relative: { x, y, z: 0 },
+    relative: pos,
     trueDistanceLy: x,
     horizontalDistanceLy: x,
     heightLy: 0,
     azimuthRad: 0,
-    realPosition: { x, y, z: 0 },
-    projectedPosition: { x, y, z: 0 },
-    orthographicFootprint: { x, y, z: 0 },
+    realPosition: pos,
+    projectedPosition: pos,
+    orthographicFootprint: pos,
     arcPoints: [],
   };
 }
@@ -93,10 +98,24 @@ describe('empire utils', () => {
     const projectedStars = [projected(starA, 0), projected(starB, 3), projected(starC, 6)];
     const assignments = { a: 'e1', b: 'e1', c: 'e1' };
 
-    const segments = computeEmpireInternalSegments(projectedStars, assignments, 4);
+    const segments = computeEmpireInternalSegments(projectedStars, assignments, 4, true);
     expect(segments).toHaveLength(2);
     expect(segments.every((segment) => segment.empireId === 'e1')).toBe(true);
+    expect(segments[0].from).toEqual(toMapPosition(projectedStars[0]));
+  });
+
+  it('maps empire positions onto the chart plane', () => {
+    const entry = projected(starB, 3, 4);
+    expect(toMapPosition(entry)).toEqual([3, EMPIRE_MAP_LIFT, 4]);
+  });
+
+  it('can draw internal links in 3D between real star positions', () => {
+    const a = projected(starA, 0);
+    const b = projected(starB, 3);
+    b.realPosition = { x: 3, y: 0, z: 4 };
+    const segments = computeEmpireInternalSegments([a, b], { a: 'e1', b: 'e1' }, 5, false);
     expect(segments[0].from).toEqual([0, 0, 0]);
+    expect(segments[0].to).toEqual([3, 4, 0]);
   });
 
   it('includes the focus star when building empire line segments', () => {
@@ -119,7 +138,34 @@ describe('empire utils', () => {
     const anchors = computeEmpireLabelAnchors(projectedStars, empires, assignments);
 
     expect(anchors).toHaveLength(1);
-    expect(anchors[0].position).toEqual([0, 0, 0]);
+    expect(anchors[0].position).toEqual(toMapPosition(projectedStars[0]));
+  });
+
+  it('builds territory hulls from projected chart positions', () => {
+    const projectedStars = [
+      projected(starA, 0),
+      projected(starB, 3),
+      projected(starD, 3, 4),
+    ];
+    const assignments = { a: 'e1', b: 'e1', d: 'e1' };
+    const territories = computeEmpireTerritories(projectedStars, empires, assignments);
+
+    expect(territories).toHaveLength(1);
+    expect(territories[0].positions.length).toBeGreaterThanOrEqual(3);
+    for (const [x, y, z] of territories[0].positions) {
+      expect(y).toBe(EMPIRE_MAP_LIFT);
+      expect(Number.isFinite(x)).toBe(true);
+      expect(Number.isFinite(z)).toBe(true);
+    }
+  });
+
+  it('computes convex hulls in chart coordinates', () => {
+    const hull = convexHull2D([
+      { x: 0, y: 0 },
+      { x: 4, y: 0 },
+      { x: 2, y: 3 },
+    ]);
+    expect(hull).toHaveLength(3);
   });
 
   it('filters stars by highlighted empire', () => {
