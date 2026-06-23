@@ -166,7 +166,7 @@ function initState() {
       showHoverNearestLines: false,
       alwaysHighlightSol: false,
       showLineToSol: false,
-      showAllStarNames: false,
+      showAllStarNames: true,
       showGalacticArrows: true,
       showPoliticalLayer: false,
       showEmpireLabels: true,
