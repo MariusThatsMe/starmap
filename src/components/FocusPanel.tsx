@@ -53,9 +53,9 @@ function NearestToFocusList() {
 
 export function FocusPanel({ projected }: Props) {
   const focusStar = useStarMapStore((s) => s.focusStar);
-  const focusOnStar = useStarMapStore((s) => s.focusOnStar);
-  const returnToSol = useStarMapStore((s) => s.returnToSol);
-  const goBackInHistory = useStarMapStore((s) => s.goBackInHistory);
+  const requestFocusOnStar = useStarMapStore((s) => s.requestFocusOnStar);
+  const requestReturnToSol = useStarMapStore((s) => s.requestReturnToSol);
+  const requestGoBackInHistory = useStarMapStore((s) => s.requestGoBackInHistory);
   const focusHistory = useStarMapStore((s) => s.focusHistory);
   const catalogLimited = useStarMapStore((s) => s.catalogLimited);
 
@@ -75,7 +75,7 @@ export function FocusPanel({ projected }: Props) {
             <div className="flex flex-wrap gap-2 mt-3">
               <button
                 type="button"
-                onClick={returnToSol}
+                onClick={requestReturnToSol}
                 className="rounded bg-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-600"
               >
                 Return to Sol
@@ -83,7 +83,7 @@ export function FocusPanel({ projected }: Props) {
               {focusHistory.length > 0 && (
                 <button
                   type="button"
-                  onClick={goBackInHistory}
+                  onClick={requestGoBackInHistory}
                   className="rounded bg-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-600"
                 >
                   ← Back
@@ -101,9 +101,9 @@ export function FocusPanel({ projected }: Props) {
         <SelectedStarDetails
           projected={projected}
           focusStar={focusStar}
-          focusOnStar={focusOnStar}
-          returnToSol={returnToSol}
-          goBackInHistory={goBackInHistory}
+          requestFocusOnStar={requestFocusOnStar}
+          requestReturnToSol={requestReturnToSol}
+          requestGoBackInHistory={requestGoBackInHistory}
           focusHistory={focusHistory}
           catalogLimited={catalogLimited}
         />
@@ -117,17 +117,17 @@ export function FocusPanel({ projected }: Props) {
 function SelectedStarDetails({
   projected,
   focusStar,
-  focusOnStar,
-  returnToSol,
-  goBackInHistory,
+  requestFocusOnStar,
+  requestReturnToSol,
+  requestGoBackInHistory,
   focusHistory,
   catalogLimited,
 }: {
   projected: ProjectedStar;
   focusStar: ReturnType<typeof useStarMapStore.getState>['focusStar'];
-  focusOnStar: (id: string) => void;
-  returnToSol: () => void;
-  goBackInHistory: () => void;
+  requestFocusOnStar: (id: string) => void;
+  requestReturnToSol: () => void;
+  requestGoBackInHistory: () => void;
   focusHistory: string[];
   catalogLimited: boolean;
 }) {
@@ -191,7 +191,7 @@ function SelectedStarDetails({
         {star.id !== focusStar.id && (
           <button
             type="button"
-            onClick={() => focusOnStar(star.id)}
+            onClick={() => requestFocusOnStar(star.id)}
             className="rounded bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-500"
           >
             Focus here
@@ -200,7 +200,7 @@ function SelectedStarDetails({
         {focusStar.id !== 'sol' && (
           <button
             type="button"
-            onClick={returnToSol}
+            onClick={requestReturnToSol}
             className="rounded bg-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-600"
           >
             Return to Sol
@@ -209,7 +209,7 @@ function SelectedStarDetails({
         {focusHistory.length > 0 && (
           <button
             type="button"
-            onClick={goBackInHistory}
+            onClick={requestGoBackInHistory}
             className="rounded bg-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-600"
           >
             ← Back

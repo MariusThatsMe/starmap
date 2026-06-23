@@ -3,6 +3,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStarMapStore } from '../state/useStarMapStore';
+import { useFocusGroupTransition } from '../hooks/useFocusGroupTransition';
 import { TacticalGrid } from './TacticalGrid';
 import { StarPoint } from './StarPoint';
 import { ProjectedPoint } from './ProjectedPoint';
@@ -24,49 +25,42 @@ const CAMERA_OFFSETS: Record<ViewPreset, [number, number, number]> = {
   reset: [12, 14, 10],
 };
 
+const CAMERA_TARGET = new THREE.Vector3(0, 0, 0);
+
 function CameraController({
-  focusOffset,
   viewPreset,
   onPresetApplied,
+  isTransitioning,
 }: {
-  focusOffset: THREE.Vector3;
   viewPreset: ViewPreset;
   onPresetApplied: () => void;
+  isTransitioning: boolean;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<React.ComponentRef<typeof OrbitControls>>(null);
   const lastPreset = useRef<ViewPreset>('oblique');
 
   useEffect(() => {
+    if (isTransitioning) return;
     if (viewPreset === lastPreset.current && viewPreset === 'oblique') return;
     lastPreset.current = viewPreset;
 
     const offset = CAMERA_OFFSETS[viewPreset];
-    camera.position.set(
-      focusOffset.x + offset[0],
-      focusOffset.y + offset[1],
-      focusOffset.z + offset[2],
-    );
+    camera.position.set(offset[0], offset[1], offset[2]);
     if (controlsRef.current) {
-      controlsRef.current.target.copy(focusOffset);
+      controlsRef.current.target.copy(CAMERA_TARGET);
       controlsRef.current.update();
     }
     if (viewPreset !== 'oblique') {
       onPresetApplied();
     }
-  }, [viewPreset, focusOffset, camera, onPresetApplied]);
-
-  useEffect(() => {
-    if (controlsRef.current) {
-      controlsRef.current.target.copy(focusOffset);
-      controlsRef.current.update();
-    }
-  }, [focusOffset]);
+  }, [viewPreset, camera, onPresetApplied, isTransitioning]);
 
   return (
     <OrbitControls
       ref={controlsRef}
       makeDefault
+      enabled={!isTransitioning}
       enableDamping
       dampingFactor={0.08}
       minDistance={2}
@@ -100,6 +94,13 @@ function DropLine({
 }
 
 function SceneContent() {
+  const groupRef = useRef<THREE.Group>(null);
+  const gridGroupRef = useRef<THREE.Group>(null);
+  const { isTransitioning, frozenMaxRange, frozenRingStep } = useFocusGroupTransition(
+    groupRef,
+    gridGroupRef,
+  );
+
   const focusStar = useStarMapStore((s) => s.focusStar);
   const projectedStars = useStarMapStore((s) => s.projectedStars);
   const toggles = useStarMapStore((s) => s.toggles);
@@ -111,6 +112,8 @@ function SceneContent() {
   const viewPreset = useStarMapStore((s) => s.viewPreset);
   const setViewPreset = useStarMapStore((s) => s.setViewPreset);
   const expansionReach = useStarMapStore((s) => s.expansionReach);
+  const elevationArcsSuppressed = useStarMapStore((s) => s.elevationArcsSuppressed);
+  const showElevationArcs = toggles.showElevationArcs && !elevationArcsSuppressed;
 
   const getExpansionHop = useCallback(
     (starId: string) => {
@@ -120,11 +123,6 @@ function SceneContent() {
     },
     [expansionReach],
   );
-
-  const focusOffset = useMemo(() => {
-    const [fx, fy, fz] = toThreePosition(focusStar.positionLy);
-    return new THREE.Vector3(-fx, -fy, -fz);
-  }, [focusStar.positionLy.x, focusStar.positionLy.y, focusStar.positionLy.z]);
 
   const onPresetApplied = useCallback(() => setViewPreset('oblique'), [setViewPreset]);
 
@@ -189,8 +187,12 @@ function SceneContent() {
       <ambientLight intensity={0.35} />
       <pointLight position={[10, 20, 10]} intensity={0.8} />
 
-      <group position={[focusOffset.x, focusOffset.y, focusOffset.z]}>
-        <TacticalGrid />
+      <group ref={groupRef}>
+        <TacticalGrid
+          groupRef={gridGroupRef}
+          frozenMaxRange={frozenMaxRange}
+          frozenRingStep={frozenRingStep}
+        />
 
         <StarPoint
           star={focusStar}
@@ -243,7 +245,7 @@ function SceneContent() {
 
           return (
             <group key={id}>
-              {toggles.showElevationArcs && p.trueDistanceLy > 0.01 && (
+              {showElevationArcs && p.trueDistanceLy > 0.01 && (
                 <ElevationArc
                   arcPoints={p.arcPoints}
                   belowPlane={p.heightLy < 0}
@@ -284,9 +286,9 @@ function SceneContent() {
       </group>
 
       <CameraController
-        focusOffset={focusOffset}
         viewPreset={viewPreset}
         onPresetApplied={onPresetApplied}
+        isTransitioning={isTransitioning}
       />
     </>
   );

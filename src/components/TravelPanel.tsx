@@ -89,7 +89,7 @@ export function TravelPanel() {
   const simulateExpansionReach = useStarMapStore((s) => s.simulateExpansionReach);
   const clearExpansionReach = useStarMapStore((s) => s.clearExpansionReach);
   const setSelectedStarId = useStarMapStore((s) => s.setSelectedStarId);
-  const focusOnStar = useStarMapStore((s) => s.focusOnStar);
+  const requestFocusOnStar = useStarMapStore((s) => s.requestFocusOnStar);
 
   const projectedIds = useMemo(
     () => new Set(projectedStars.map((p) => p.star.id)),
@@ -237,7 +237,7 @@ export function TravelPanel() {
           {travelRoute.stars.length > 1 && (
             <button
               type="button"
-              onClick={() => focusOnStar(travelRoute.stars[1].id)}
+              onClick={() => requestFocusOnStar(travelRoute.stars[1].id)}
               className="rounded bg-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-600"
             >
               Focus next hop

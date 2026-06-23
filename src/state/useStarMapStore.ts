@@ -17,6 +17,7 @@ import { getStarPosition } from '../math/nearest-neighbors';
 import type {
   DisplayToggles,
   FocusState,
+  PendingFocusTransition,
   PlaneMode,
   ProjectedStar,
   Star,
@@ -43,9 +44,16 @@ type StarMapState = {
   travelRouteError: TravelRouteFailure | null;
   maxExpansionHops: number;
   expansionReach: ExpansionReach | null;
+  pendingFocusTransition: PendingFocusTransition | null;
+  elevationArcsSuppressed: boolean;
 
   setFocusStarId: (id: string) => void;
   focusOnStar: (id: string) => void;
+  requestFocusOnStar: (id: string) => void;
+  requestReturnToSol: () => void;
+  requestGoBackInHistory: () => void;
+  commitFocusTransition: () => void;
+  clearPendingFocusTransition: () => void;
   returnToSol: () => void;
   goBackInHistory: () => void;
   setNeighborLimit: (n: number) => void;
@@ -141,6 +149,8 @@ function initState() {
     travelRouteError: null,
     maxExpansionHops: 3,
     expansionReach: null,
+    pendingFocusTransition: null,
+    elevationArcsSuppressed: false,
   };
 }
 
@@ -185,6 +195,73 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
     }));
     get().recompute();
   },
+
+  requestFocusOnStar: (id) => {
+    const { focusState, pendingFocusTransition, toggles } = get();
+    if (id === focusState.focusStarId || pendingFocusTransition) return;
+    set({
+      pendingFocusTransition: { targetStarId: id, kind: 'focus' },
+      elevationArcsSuppressed: toggles.showElevationArcs,
+    });
+  },
+
+  requestReturnToSol: () => {
+    const { focusState, pendingFocusTransition, toggles } = get();
+    if (focusState.focusStarId === 'sol' || pendingFocusTransition) return;
+    set({
+      pendingFocusTransition: { targetStarId: 'sol', kind: 'returnToSol' },
+      elevationArcsSuppressed: toggles.showElevationArcs,
+    });
+  },
+
+  requestGoBackInHistory: () => {
+    const { focusHistory, pendingFocusTransition, toggles } = get();
+    if (focusHistory.length === 0 || pendingFocusTransition) return;
+    const prev = focusHistory[focusHistory.length - 1];
+    set({
+      pendingFocusTransition: { targetStarId: prev, kind: 'goBack' },
+      elevationArcsSuppressed: toggles.showElevationArcs,
+    });
+  },
+
+  commitFocusTransition: () => {
+    const { pendingFocusTransition, focusState, focusHistory } = get();
+    if (!pendingFocusTransition) return;
+
+    const { targetStarId, kind } = pendingFocusTransition;
+
+    if (kind === 'focus') {
+      set((s) => ({
+        pendingFocusTransition: null,
+        elevationArcsSuppressed: false,
+        focusHistory: [...s.focusHistory, focusState.focusStarId],
+        focusState: { ...focusState, focusStarId: targetStarId },
+        selectedStarId: targetStarId,
+        ...clearTravelState(),
+      }));
+    } else if (kind === 'returnToSol') {
+      set({
+        pendingFocusTransition: null,
+        elevationArcsSuppressed: false,
+        focusHistory: [],
+        focusState: { ...focusState, focusStarId: 'sol' },
+        selectedStarId: null,
+        ...clearTravelState(),
+      });
+    } else {
+      set({
+        pendingFocusTransition: null,
+        elevationArcsSuppressed: false,
+        focusHistory: focusHistory.slice(0, -1),
+        focusState: { ...focusState, focusStarId: targetStarId },
+        ...clearTravelState(),
+      });
+    }
+    get().recompute();
+  },
+
+  clearPendingFocusTransition: () =>
+    set({ pendingFocusTransition: null, elevationArcsSuppressed: false }),
 
   returnToSol: () => {
     set((s) => ({

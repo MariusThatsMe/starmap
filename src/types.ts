@@ -44,6 +44,13 @@ export type ProjectedStar = {
 
 export type ViewPreset = 'oblique' | 'topdown' | 'side' | 'reset';
 
+export type FocusTransitionKind = 'focus' | 'returnToSol' | 'goBack';
+
+export type PendingFocusTransition = {
+  targetStarId: string;
+  kind: FocusTransitionKind;
+};
+
 export type DisplayToggles = {
   showRealStars: boolean;
   showProjectedPoints: boolean;

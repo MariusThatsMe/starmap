@@ -1,10 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, type RefObject } from 'react';
 import { StraightLineMesh } from './LineMesh';
 import { BillboardText } from './BillboardText';
 import { GalacticOrientationArrows } from './GalacticOrientationArrows';
 import { useStarMapStore } from '../state/useStarMapStore';
 import * as THREE from 'three';
-import { toThreePosition } from '../utils/coordinate-render';
 
 /** Transparent grid material — never writes depth so lines/arcs behind the plane stay visible. */
 function gridMaterial(color: string, opacity: number) {
@@ -20,12 +19,18 @@ function gridMaterial(color: string, opacity: number) {
   );
 }
 
-export function TacticalGrid() {
-  const maxRange = useStarMapStore((s) => s.maxDisplayRangeLy);
-  const ringStep = useStarMapStore((s) => s.ringStepLy);
+type Props = {
+  groupRef: RefObject<THREE.Group | null>;
+  frozenMaxRange?: number;
+  frozenRingStep?: number;
+};
+
+export function TacticalGrid({ groupRef, frozenMaxRange, frozenRingStep }: Props) {
+  const storeMaxRange = useStarMapStore((s) => s.maxDisplayRangeLy);
+  const storeRingStep = useStarMapStore((s) => s.ringStepLy);
   const showGalacticArrows = useStarMapStore((s) => s.toggles.showGalacticArrows);
-  const focusPos = useStarMapStore((s) => s.focusStar.positionLy);
-  const [fx, fy, fz] = toThreePosition(focusPos);
+  const maxRange = frozenMaxRange ?? storeMaxRange;
+  const ringStep = frozenRingStep ?? storeRingStep;
 
   const { rings, spokes, labelRings } = useMemo(() => {
     const ceilMax = Math.max(ringStep, Math.ceil(maxRange / ringStep) * ringStep);
@@ -45,7 +50,7 @@ export function TacticalGrid() {
   const outerRadius = rings[rings.length - 1] ?? ringStep;
 
   return (
-    <group position={[fx, fy, fz]} renderOrder={0}>
+    <group ref={groupRef} renderOrder={0}>
       {rings.map((r) => (
         <mesh key={`ring-${r}`} rotation={[-Math.PI / 2, 0, 0]} renderOrder={0}>
           <ringGeometry args={[r - 0.015, r + 0.015, 128]} />

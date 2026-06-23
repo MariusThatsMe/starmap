@@ -4,7 +4,7 @@ import type { Star } from '../types';
 import { formatDistanceLy } from '../utils/star-visuals';
 
 export function SearchBox() {
-  const focusOnStar = useStarMapStore((s) => s.focusOnStar);
+  const requestFocusOnStar = useStarMapStore((s) => s.requestFocusOnStar);
   const setSelectedStarId = useStarMapStore((s) => s.setSelectedStarId);
   const displayedIds = useStarMapStore((s) =>
     s.displayedStars.map((st) => st.id).join(','),
@@ -75,7 +75,7 @@ export function SearchBox() {
                     <button
                       type="button"
                       onClick={() => {
-                        focusOnStar(star.id);
+                        requestFocusOnStar(star.id);
                         setOpen(false);
                       }}
                       className="text-[10px] rounded bg-sky-700 px-2 py-0.5 text-white hover:bg-sky-600"

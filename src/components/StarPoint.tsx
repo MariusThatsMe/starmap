@@ -1,8 +1,16 @@
 import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import type { Mesh } from 'three';
 import type { Star } from '../types';
+import { useStarMapStore } from '../state/useStarMapStore';
 import { spectralColor, starRadius } from '../utils/star-visuals';
+import {
+  focusWireOpacityForStar,
+  FOCUS_WIRE_OPACITY,
+  FOCUS_WIRE_SCALE,
+  focusTransitionVisualRef,
+} from '../utils/focus-transition-visual';
 
 type Props = {
   star: Star;
@@ -30,6 +38,10 @@ export function StarPoint({
   onPointerOut,
 }: Props) {
   const ref = useRef<Mesh>(null);
+  const focusWireRef = useRef<Mesh>(null);
+  const pendingIncomingId = useStarMapStore((s) => s.pendingFocusTransition?.targetStarId);
+  const hasFocusWire = isFocus || star.id === pendingIncomingId;
+
   const color = spectralColor(star.spectralType);
   const radius = starRadius(star.absoluteMagnitude, star.apparentMagnitude);
   const scale = isFocus
@@ -50,6 +62,36 @@ export function StarPoint({
         : expansionHop === 3
           ? '#8b5cf6'
           : '#7c3aed';
+
+  useFrame(() => {
+    if (!hasFocusWire) return;
+
+    const wire = focusWireRef.current;
+    if (!wire) return;
+
+    const visual = focusTransitionVisualRef.current;
+    const inHandoff =
+      visual &&
+      (star.id === visual.outgoingStarId || star.id === visual.incomingStarId);
+
+    let opacity: number;
+    if (inHandoff) {
+      opacity = focusWireOpacityForStar(star.id);
+    } else if (isFocus) {
+      opacity = FOCUS_WIRE_OPACITY;
+    } else {
+      opacity = 0;
+    }
+
+    wire.visible = opacity > 0.01;
+    const wireScale = 1 + (FOCUS_WIRE_SCALE - 1) * (opacity / FOCUS_WIRE_OPACITY);
+    wire.scale.setScalar(wireScale);
+
+    const material = wire.material;
+    if (material && 'opacity' in material && typeof material.opacity === 'number') {
+      material.opacity = opacity;
+    }
+  });
 
   return (
     <mesh
@@ -96,10 +138,15 @@ export function StarPoint({
           />
         </mesh>
       )}
-      {isFocus && (
-        <mesh scale={1.8}>
+      {hasFocusWire && (
+        <mesh ref={focusWireRef} visible={isFocus}>
           <sphereGeometry args={[scale, 16, 16]} />
-          <meshBasicMaterial color="#fbbf24" wireframe transparent opacity={0.35} />
+          <meshBasicMaterial
+            color="#fbbf24"
+            wireframe
+            transparent
+            opacity={FOCUS_WIRE_OPACITY}
+          />
         </mesh>
       )}
       {isSolHighlight && !isFocus && (
