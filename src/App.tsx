@@ -84,7 +84,14 @@ function App() {
             <EmpiresPanel />
           </div>
         </details>
-        <FocusPanel projected={selectedProjected} />
+        <details className="mb-2">
+          <summary className="cursor-pointer text-sm text-slate-300">
+            Focus: {focusStar.name}
+          </summary>
+          <div className="mt-2">
+            <FocusPanel projected={selectedProjected} />
+          </div>
+        </details>
       </div>
     </div>
   );
