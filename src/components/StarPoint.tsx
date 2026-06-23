@@ -20,7 +20,10 @@ type Props = {
   isSelected?: boolean;
   isHovered?: boolean;
   expansionHop?: number;
-  onClick?: () => void;
+  empireColor?: string;
+  dimmed?: boolean;
+  isCapital?: boolean;
+  onClick?: (event: MouseEvent) => void;
   onPointerOver?: () => void;
   onPointerOut?: () => void;
 };
@@ -33,6 +36,9 @@ export function StarPoint({
   isSelected,
   isHovered,
   expansionHop,
+  empireColor,
+  dimmed,
+  isCapital,
   onClick,
   onPointerOver,
   onPointerOut,
@@ -42,7 +48,8 @@ export function StarPoint({
   const pendingIncomingId = useStarMapStore((s) => s.pendingFocusTransition?.targetStarId);
   const hasFocusWire = isFocus || star.id === pendingIncomingId;
 
-  const color = spectralColor(star.spectralType);
+  const color = empireColor ?? spectralColor(star.spectralType);
+  const dimFactor = dimmed ? 0.22 : 1;
   const radius = starRadius(star.absoluteMagnitude, star.apparentMagnitude);
   const scale = isFocus
     ? radius * 2.2
@@ -50,7 +57,9 @@ export function StarPoint({
       ? radius * 1.8
       : isSelected || isHovered
         ? radius * 1.6
-        : expansionHop
+        : isCapital
+          ? radius * 1.75
+          : expansionHop
           ? radius * (1.35 + Math.max(0, 3 - expansionHop) * 0.05)
           : radius;
 
@@ -99,7 +108,7 @@ export function StarPoint({
       position={position}
       onClick={(e: ThreeEvent<MouseEvent>) => {
         e.stopPropagation();
-        onClick?.();
+        onClick?.(e.nativeEvent);
       }}
       onPointerOver={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
@@ -115,8 +124,10 @@ export function StarPoint({
       <meshStandardMaterial
         color={color}
         emissive={color}
+        transparent={dimmed}
+        opacity={dimFactor}
         emissiveIntensity={
-          isFocus
+          (isFocus
             ? 1.2
             : isSolHighlight
               ? 1.0
@@ -124,7 +135,9 @@ export function StarPoint({
                 ? 0.9
                 : expansionHop
                   ? 0.65 + Math.max(0, 3 - expansionHop) * 0.1
-                  : 0.5
+                  : empireColor
+                    ? 0.75
+                    : 0.5) * dimFactor
         }
       />
       {expansionHop !== undefined && expansionHop > 0 && !isFocus && (
@@ -146,6 +159,17 @@ export function StarPoint({
             wireframe
             transparent
             opacity={FOCUS_WIRE_OPACITY}
+          />
+        </mesh>
+      )}
+      {isCapital && !isFocus && (
+        <mesh scale={1.9}>
+          <sphereGeometry args={[scale, 16, 16]} />
+          <meshBasicMaterial
+            color={empireColor ?? '#ffffff'}
+            wireframe
+            transparent
+            opacity={dimmed ? 0.2 : 0.75}
           />
         </mesh>
       )}

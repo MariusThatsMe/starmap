@@ -308,3 +308,10 @@ export function reconstructExpansionPath(
 
   return stars.length === pathIds.length ? stars : null;
 }
+
+export function getUnclaimedStarIdsInReach(
+  reach: ExpansionReach,
+  starAssignments: Record<string, string | null>,
+): string[] {
+  return Object.keys(reach.hopByStarId).filter((starId) => !starAssignments[starId]);
+}

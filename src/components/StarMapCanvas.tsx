@@ -13,8 +13,13 @@ import { StarTooltip } from './StarTooltip';
 import { NeighborLines } from './NeighborLines';
 import { TravelRouteLines } from './TravelRouteLines';
 import { ExpansionReachLines } from './ExpansionReachLines';
+import { EmpireBorderLines } from './EmpireBorderLines';
+import { EmpireInternalLines } from './EmpireInternalLines';
+import { EmpireLabels } from './EmpireLabels';
+import { EmpireLegend } from './EmpireLegend';
 import { DashedLineMesh } from './LineMesh';
 import { toThreePosition } from '../utils/coordinate-render';
+import { getEmpireForStar, isEmpireCapital, starMatchesEmpireFilter } from '../utils/empires';
 import type { ViewPreset } from '../types';
 import { findStarById } from '../math/nearest-neighbors';
 
@@ -109,11 +114,58 @@ function SceneContent() {
   const hoveredStarId = useStarMapStore((s) => s.hoveredStarId);
   const setSelectedStarId = useStarMapStore((s) => s.setSelectedStarId);
   const setHoveredStarId = useStarMapStore((s) => s.setHoveredStarId);
+  const assignStarToEmpire = useStarMapStore((s) => s.assignStarToEmpire);
+  const paintEmpireId = useStarMapStore((s) => s.paintEmpireId);
   const viewPreset = useStarMapStore((s) => s.viewPreset);
   const setViewPreset = useStarMapStore((s) => s.setViewPreset);
   const expansionReach = useStarMapStore((s) => s.expansionReach);
   const elevationArcsSuppressed = useStarMapStore((s) => s.elevationArcsSuppressed);
+  const empires = useStarMapStore((s) => s.empires);
+  const starAssignments = useStarMapStore((s) => s.starAssignments);
+  const highlightedEmpireId = useStarMapStore((s) => s.highlightedEmpireId);
   const showElevationArcs = toggles.showElevationArcs && !elevationArcsSuppressed;
+  const showPoliticalLayer = toggles.showPoliticalLayer;
+
+  const getEmpireVisuals = useCallback(
+    (starId: string) => {
+      const empire = getEmpireForStar(starId, starAssignments, empires);
+      const empireColor =
+        showPoliticalLayer && empire ? empire.color : undefined;
+      const dimmed =
+        showPoliticalLayer &&
+        highlightedEmpireId !== null &&
+        !starMatchesEmpireFilter(starId, highlightedEmpireId, starAssignments);
+      const isCapital =
+        showPoliticalLayer && isEmpireCapital(starId, empires) !== null;
+      return { empireColor, dimmed, isCapital };
+    },
+    [starAssignments, empires, showPoliticalLayer, highlightedEmpireId],
+  );
+
+  const handleStarClick = useCallback(
+    (starId: string, event?: MouseEvent) => {
+      if (paintEmpireId) {
+        if (event?.shiftKey) {
+          if (starAssignments[starId] === paintEmpireId) {
+            assignStarToEmpire(starId, null);
+          }
+        } else {
+          assignStarToEmpire(starId, paintEmpireId);
+        }
+      }
+      setSelectedStarId(starId);
+    },
+    [paintEmpireId, starAssignments, assignStarToEmpire, setSelectedStarId],
+  );
+
+  const handleStarInteraction = useCallback(
+    (starId: string) => ({
+      onClick: (event: MouseEvent) => handleStarClick(starId, event),
+      onPointerOver: () => setHoveredStarId(starId),
+      onPointerOut: () => setHoveredStarId(null),
+    }),
+    [handleStarClick, setHoveredStarId],
+  );
 
   const getExpansionHop = useCallback(
     (starId: string) => {
@@ -131,15 +183,6 @@ function SceneContent() {
       .filter((p) => p.trueDistanceLy < 8 || p.star.id === selectedStarId)
       .slice(0, 20);
   }, [projectedStars, selectedStarId]);
-
-  const handleStarInteraction = useCallback(
-    (starId: string) => ({
-      onClick: () => setSelectedStarId(starId),
-      onPointerOver: () => setHoveredStarId(starId),
-      onPointerOut: () => setHoveredStarId(null),
-    }),
-    [setSelectedStarId, setHoveredStarId],
-  );
 
   const solStar = useMemo(() => findStarById(catalog, 'sol'), [catalog]);
 
@@ -164,6 +207,7 @@ function SceneContent() {
   );
 
   const focusHandlers = handleStarInteraction(focusStar.id);
+  const focusEmpireVisuals = getEmpireVisuals(focusStar.id);
 
   const solInNeighborSet = projectedStars.some((p) => p.star.id === 'sol');
   const showStandaloneSol =
@@ -199,6 +243,9 @@ function SceneContent() {
           position={toThreePosition(focusStar.positionLy)}
           isFocus
           isHovered={hoveredStarId === focusStar.id}
+          empireColor={focusEmpireVisuals.empireColor}
+          dimmed={focusEmpireVisuals.dimmed}
+          isCapital={focusEmpireVisuals.isCapital}
           {...focusHandlers}
         />
 
@@ -223,6 +270,12 @@ function SceneContent() {
 
         <ExpansionReachLines />
 
+        <EmpireInternalLines />
+
+        <EmpireBorderLines />
+
+        <EmpireLabels />
+
         {showStandaloneSol && toggles.showRealStars && solStar && (
           <>
             <StarPoint
@@ -232,6 +285,7 @@ function SceneContent() {
               isSelected={selectedStarId === 'sol'}
               isHovered={hoveredStarId === 'sol'}
               expansionHop={getExpansionHop('sol')}
+              {...getEmpireVisuals('sol')}
               {...handleStarInteraction('sol')}
             />
             {shouldShowLabel('sol') && (
@@ -251,6 +305,7 @@ function SceneContent() {
           const isSelected = selectedStarId === id;
           const isHovered = hoveredStarId === id;
           const handlers = handleStarInteraction(id);
+          const { empireColor, dimmed, isCapital } = getEmpireVisuals(id);
           const real = toThreePosition(p.realPosition);
           const proj = toThreePosition(p.projectedPosition);
           const foot = toThreePosition(p.orthographicFootprint);
@@ -278,6 +333,9 @@ function SceneContent() {
                   isSelected={isSelected}
                   isHovered={isHovered}
                   expansionHop={getExpansionHop(id)}
+                  empireColor={empireColor}
+                  dimmed={dimmed}
+                  isCapital={isCapital}
                   {...handlers}
                 />
               )}
@@ -287,6 +345,8 @@ function SceneContent() {
                   position={proj}
                   isSelected={isSelected}
                   isHovered={isHovered}
+                  empireColor={empireColor}
+                  dimmed={dimmed}
                   {...handlers}
                 />
               )}
@@ -317,7 +377,13 @@ function SceneContent() {
 export function StarMapCanvas() {
   const hoveredStarId = useStarMapStore((s) => s.hoveredStarId);
   const projectedStars = useStarMapStore((s) => s.projectedStars);
+  const paintEmpireId = useStarMapStore((s) => s.paintEmpireId);
+  const empires = useStarMapStore((s) => s.empires);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  const paintEmpire = paintEmpireId
+    ? empires.find((empire) => empire.id === paintEmpireId) ?? null
+    : null;
 
   const hoveredProjected = projectedStars.find((p) => p.star.id === hoveredStarId) ?? null;
 
@@ -341,6 +407,16 @@ export function StarMapCanvas() {
           y={mousePos.y}
           visible
         />
+      )}
+      <EmpireLegend />
+      {paintEmpire && (
+        <div className="pointer-events-none absolute top-3 left-1/2 z-20 -translate-x-1/2 rounded-full border border-slate-600 bg-slate-950/90 px-4 py-1.5 text-xs text-slate-200 shadow-lg backdrop-blur-sm">
+          Paint mode:{' '}
+          <span className="font-medium" style={{ color: paintEmpire.color }}>
+            {paintEmpire.name}
+          </span>
+          <span className="text-slate-500"> · click to assign · shift+click to unassign</span>
+        </div>
       )}
     </div>
   );

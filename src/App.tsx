@@ -1,11 +1,18 @@
+import { useEffect } from 'react';
 import { useStarMapStore } from './state/useStarMapStore';
 import { StarMapCanvas } from './components/StarMapCanvas';
 import { FocusPanel } from './components/FocusPanel';
 import { ControlsPanel } from './components/ControlsPanel';
+import { EmpiresPanel } from './components/EmpiresPanel';
 import { SearchBox } from './components/SearchBox';
 
 function App() {
+  const hydrateCampaignFromStorage = useStarMapStore((s) => s.hydrateCampaignFromStorage);
   const focusStar = useStarMapStore((s) => s.focusStar);
+
+  useEffect(() => {
+    hydrateCampaignFromStorage();
+  }, [hydrateCampaignFromStorage]);
   const selectedStarId = useStarMapStore((s) => s.selectedStarId);
   const projectedStars = useStarMapStore((s) => s.projectedStars);
   const catalog = useStarMapStore((s) => s.catalog);
@@ -33,8 +40,9 @@ function App() {
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-72 shrink-0 overflow-y-auto border-r border-slate-800 p-3 lg:block">
+        <aside className="hidden w-72 shrink-0 overflow-y-auto border-r border-slate-800 p-3 lg:block space-y-3">
           <ControlsPanel />
+          <EmpiresPanel />
         </aside>
 
         <main className="relative z-0 min-w-0 flex-1">
@@ -51,6 +59,12 @@ function App() {
           <summary className="cursor-pointer text-sm text-slate-300">Controls</summary>
           <div className="mt-2">
             <ControlsPanel />
+          </div>
+        </details>
+        <details className="mb-2">
+          <summary className="cursor-pointer text-sm text-slate-300">Empires</summary>
+          <div className="mt-2">
+            <EmpiresPanel />
           </div>
         </details>
         <FocusPanel projected={selectedProjected} />

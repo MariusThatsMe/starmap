@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useStarMapStore } from '../state/useStarMapStore';
 import { formatDistanceLy } from '../utils/star-visuals';
 import type { TravelRouteFailure, TravelLeg } from '../math/travel-route';
+import { getUnclaimedStarIdsInReach } from '../math/travel-route';
 import type { Star } from '../types';
 
 const HOP_PREVIEW_LIMIT = 8;
@@ -90,6 +91,9 @@ export function TravelPanel() {
   const clearExpansionReach = useStarMapStore((s) => s.clearExpansionReach);
   const setSelectedStarId = useStarMapStore((s) => s.setSelectedStarId);
   const requestFocusOnStar = useStarMapStore((s) => s.requestFocusOnStar);
+  const empires = useStarMapStore((s) => s.empires);
+  const starAssignments = useStarMapStore((s) => s.starAssignments);
+  const assignReachToEmpire = useStarMapStore((s) => s.assignReachToEmpire);
 
   const projectedIds = useMemo(
     () => new Set(projectedStars.map((p) => p.star.id)),
@@ -111,6 +115,11 @@ export function TravelPanel() {
     }
     return map;
   }, [expansionReach]);
+
+  const unclaimedReachStarIds = useMemo(() => {
+    if (!expansionReach) return [];
+    return getUnclaimedStarIdsInReach(expansionReach, starAssignments);
+  }, [expansionReach, starAssignments]);
 
   const selectedStar = selectedStarId
     ? catalog.find((star) => star.id === selectedStarId)
@@ -306,6 +315,37 @@ export function TravelPanel() {
               <p className="text-[10px] text-slate-500">
                 {offViewReachCount} reachable system{offViewReachCount === 1 ? '' : 's'} outside
                 the current map view (tree lines still shown).
+              </p>
+            )}
+
+            {empires.length > 0 ? (
+              <div className="rounded border border-slate-700 bg-slate-800/40 p-2">
+                <p className="mb-2 text-[11px] text-slate-400">
+                  {unclaimedReachStarIds.length > 0
+                    ? `Add ${unclaimedReachStarIds.length} unclaimed reachable system${
+                        unclaimedReachStarIds.length === 1 ? '' : 's'
+                      } to empire:`
+                    : 'All reachable systems are already claimed.'}
+                </p>
+                {unclaimedReachStarIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {empires.map((empire) => (
+                      <button
+                        key={empire.id}
+                        type="button"
+                        onClick={() => assignReachToEmpire(empire.id)}
+                        className="rounded border border-slate-600 px-2 py-1 text-[11px] text-slate-200 hover:border-slate-500"
+                        style={{ backgroundColor: `${empire.color}33` }}
+                      >
+                        {empire.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-[10px] text-slate-500">
+                Create an empire in the sidebar to claim reachable systems.
               </p>
             )}
 

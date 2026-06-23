@@ -7,7 +7,7 @@ type Props = {
   visible?: boolean;
   isSelected?: boolean;
   isHovered?: boolean;
-  onClick?: () => void;
+  onClick?: (event: MouseEvent) => void;
   onPointerOver?: () => void;
   onPointerOut?: () => void;
 };
@@ -38,7 +38,7 @@ export function StarLabel({
         }`}
         onClick={(e) => {
           e.stopPropagation();
-          onClick?.();
+          onClick?.(e.nativeEvent);
         }}
         onPointerDown={(e) => e.stopPropagation()}
         onPointerEnter={() => {

@@ -3,6 +3,7 @@ import {
   clearAdjacencyCache,
   computeExpansionReach,
   findShortestTravelRoute,
+  getUnclaimedStarIdsInReach,
   reconstructExpansionPath,
 } from '../math/travel-route';
 import type { Star } from '../types';
@@ -109,5 +110,25 @@ describe('computeExpansionReach', () => {
 
     const path = reconstructExpansionPath(reach, catalog, 'd');
     expect(path?.map((star) => star.id)).toEqual(['sol', 'a', 'c', 'd']);
+  });
+});
+
+describe('getUnclaimedStarIdsInReach', () => {
+  beforeEach(() => {
+    clearAdjacencyCache();
+  });
+
+  const catalog: Star[] = [
+    makeStar('sol', 0, 0, 0),
+    makeStar('a', 1, 0, 0),
+    makeStar('b', 2, 0, 0),
+    makeStar('c', 3, 0, 0),
+  ];
+
+  it('returns only reachable stars without an empire assignment', () => {
+    const reach = computeExpansionReach(catalog, catalog[0], 2, 2)!;
+    const unclaimed = getUnclaimedStarIdsInReach(reach, { b: 'empire-1' }).sort();
+
+    expect(unclaimed).toEqual(['a', 'c', 'sol']);
   });
 });

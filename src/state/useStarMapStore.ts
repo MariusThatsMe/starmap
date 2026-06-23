@@ -3,6 +3,7 @@ import { loadCatalog } from '../data/catalog-loader';
 import { findNearestStars, findStarById, searchStars } from '../math/nearest-neighbors';
 import {
   computeExpansionReach,
+  getUnclaimedStarIdsInReach,
   planTravelRouteFromIds,
   type ExpansionReach,
   type TravelRoute,
@@ -14,8 +15,11 @@ import {
 } from '../math/projection';
 import { hashToAzimuth } from '../math/vector';
 import { getStarPosition } from '../math/nearest-neighbors';
+import { loadCampaignFromStorage, saveCampaignToStorage } from './empire-persistence';
+import { pickDefaultEmpireColor } from '../utils/empires';
 import type {
   DisplayToggles,
+  Empire,
   FocusState,
   PendingFocusTransition,
   PlaneMode,
@@ -46,6 +50,11 @@ type StarMapState = {
   expansionReach: ExpansionReach | null;
   pendingFocusTransition: PendingFocusTransition | null;
   elevationArcsSuppressed: boolean;
+  empires: Empire[];
+  starAssignments: Record<string, string | null>;
+  highlightedEmpireId: string | null;
+  empireBorderMaxLy: number;
+  paintEmpireId: string | null;
 
   setFocusStarId: (id: string) => void;
   focusOnStar: (id: string) => void;
@@ -72,6 +81,18 @@ type StarMapState = {
   setViewPreset: (preset: ViewPreset) => void;
   search: (query: string) => Star[];
   recompute: () => void;
+  createEmpire: (name: string, color?: string) => string;
+  updateEmpire: (id: string, patch: Partial<Pick<Empire, 'name' | 'color' | 'capitalStarId'>>) => void;
+  deleteEmpire: (id: string) => void;
+  assignStarToEmpire: (starId: string, empireId: string | null) => void;
+  assignReachToEmpire: (empireId: string) => number;
+  setEmpireCapital: (empireId: string, starId: string | null) => void;
+  setHighlightedEmpireId: (id: string | null) => void;
+  setPaintEmpireId: (id: string | null) => void;
+  setEmpireBorderMaxLy: (ly: number) => void;
+  importCampaign: (empires: Empire[], starAssignments: Record<string, string | null>) => void;
+  clearCampaign: () => void;
+  hydrateCampaignFromStorage: () => void;
 };
 
 function computeProjections(
@@ -97,12 +118,22 @@ function computeProjections(
   return { displayed, projected, maxRange };
 }
 
-function clearTravelState() {
+function clearTravelRouteState() {
   return {
     travelRoute: null as TravelRoute | null,
     travelRouteError: null as TravelRouteFailure | null,
+  };
+}
+
+function clearTravelState() {
+  return {
+    ...clearTravelRouteState(),
     expansionReach: null as ExpansionReach | null,
   };
+}
+
+function persistCampaign(empires: Empire[], starAssignments: Record<string, string | null>) {
+  saveCampaignToStorage({ empires, starAssignments });
 }
 
 function initState() {
@@ -137,6 +168,11 @@ function initState() {
       showLineToSol: false,
       showAllStarNames: false,
       showGalacticArrows: true,
+      showPoliticalLayer: false,
+      showEmpireLabels: true,
+      showEmpireBorders: true,
+      showEmpireInternalLines: true,
+      showEmpireLegend: true,
     },
     viewPreset: 'oblique' as ViewPreset,
     focusHistory: [] as string[],
@@ -151,6 +187,11 @@ function initState() {
     expansionReach: null,
     pendingFocusTransition: null,
     elevationArcsSuppressed: false,
+    empires: [],
+    starAssignments: {},
+    highlightedEmpireId: null,
+    empireBorderMaxLy: 8,
+    paintEmpireId: null,
   };
 }
 
@@ -300,7 +341,7 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
     get().recompute();
   },
 
-  setSelectedStarId: (id) => set({ selectedStarId: id, ...clearTravelState() }),
+  setSelectedStarId: (id) => set({ selectedStarId: id, ...clearTravelRouteState() }),
   setHoveredStarId: (id) => set({ hoveredStarId: id }),
 
   setToggle: (key, value) =>
@@ -313,7 +354,7 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
   planTravelRoute: () => {
     const { catalog, focusStar, selectedStarId, maxHopLy } = get();
     if (!selectedStarId) {
-      set(clearTravelState());
+      set(clearTravelRouteState());
       return;
     }
 
@@ -351,4 +392,158 @@ export const useStarMapStore = create<StarMapState>((set, get) => ({
   setViewPreset: (preset) => set({ viewPreset: preset }),
 
   search: (query) => searchStars(get().catalog, query),
+
+  createEmpire: (name, color) => {
+    const trimmed = name.trim();
+    if (!trimmed) return '';
+
+    const { empires } = get();
+    const id = `empire-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const nextEmpire: Empire = {
+      id,
+      name: trimmed,
+      color: color ?? pickDefaultEmpireColor(empires),
+    };
+    const nextEmpires = [...empires, nextEmpire];
+    set({ empires: nextEmpires });
+    persistCampaign(nextEmpires, get().starAssignments);
+    return id;
+  },
+
+  updateEmpire: (id, patch) => {
+    const { empires, starAssignments } = get();
+    const nextEmpires = empires.map((empire) => {
+      if (empire.id !== id) return empire;
+      const next: Empire = {
+        ...empire,
+        ...(patch.name !== undefined ? { name: patch.name.trim() || empire.name } : {}),
+        ...(patch.color !== undefined ? { color: patch.color } : {}),
+      };
+      if (patch.capitalStarId !== undefined) {
+        if (patch.capitalStarId === null) {
+          delete next.capitalStarId;
+        } else if (starAssignments[patch.capitalStarId] === id) {
+          next.capitalStarId = patch.capitalStarId;
+        }
+      }
+      return next;
+    });
+    set({ empires: nextEmpires });
+    persistCampaign(nextEmpires, starAssignments);
+  },
+
+  deleteEmpire: (id) => {
+    const { empires, starAssignments, highlightedEmpireId, paintEmpireId } = get();
+    const nextEmpires = empires.filter((empire) => empire.id !== id);
+    const nextAssignments = { ...starAssignments };
+    for (const [starId, empireId] of Object.entries(nextAssignments)) {
+      if (empireId === id) nextAssignments[starId] = null;
+    }
+    set({
+      empires: nextEmpires,
+      starAssignments: nextAssignments,
+      highlightedEmpireId: highlightedEmpireId === id ? null : highlightedEmpireId,
+      paintEmpireId: paintEmpireId === id ? null : paintEmpireId,
+    });
+    persistCampaign(nextEmpires, nextAssignments);
+  },
+
+  assignStarToEmpire: (starId, empireId) => {
+    const { empires, starAssignments } = get();
+    if (empireId && !empires.some((empire) => empire.id === empireId)) return;
+
+    const nextAssignments = { ...starAssignments };
+    if (empireId === null) {
+      delete nextAssignments[starId];
+    } else {
+      nextAssignments[starId] = empireId;
+    }
+
+    const nextEmpires = empires.map((empire) => {
+      if (empire.capitalStarId !== starId) return empire;
+      if (empireId === null || empire.id !== empireId) {
+        const { capitalStarId: _, ...rest } = empire;
+        return rest;
+      }
+      return empire;
+    });
+
+    set({ starAssignments: nextAssignments, empires: nextEmpires });
+    persistCampaign(nextEmpires, nextAssignments);
+  },
+
+  assignReachToEmpire: (empireId) => {
+    const { expansionReach, empires, starAssignments } = get();
+    if (!expansionReach || !empires.some((empire) => empire.id === empireId)) return 0;
+
+    const unclaimedIds = getUnclaimedStarIdsInReach(expansionReach, starAssignments);
+    if (unclaimedIds.length === 0) return 0;
+
+    const nextAssignments = { ...starAssignments };
+    for (const starId of unclaimedIds) {
+      nextAssignments[starId] = empireId;
+    }
+
+    set({ starAssignments: nextAssignments });
+    persistCampaign(empires, nextAssignments);
+    return unclaimedIds.length;
+  },
+
+  setEmpireCapital: (empireId, starId) => {
+    const { empires, starAssignments } = get();
+    if (starId !== null && starAssignments[starId] !== empireId) return;
+
+    const nextEmpires = empires.map((empire) => {
+      if (empire.id === empireId) {
+        if (starId === null) {
+          const { capitalStarId: _, ...rest } = empire;
+          return rest;
+        }
+        return { ...empire, capitalStarId: starId };
+      }
+      if (starId !== null && empire.capitalStarId === starId) {
+        const { capitalStarId: _, ...rest } = empire;
+        return rest;
+      }
+      return empire;
+    });
+
+    set({ empires: nextEmpires });
+    persistCampaign(nextEmpires, starAssignments);
+  },
+
+  setHighlightedEmpireId: (id) => set({ highlightedEmpireId: id }),
+
+  setPaintEmpireId: (id) => set({ paintEmpireId: id }),
+
+  setEmpireBorderMaxLy: (ly) => set({ empireBorderMaxLy: Math.max(1, Math.min(25, ly)) }),
+
+  importCampaign: (empires, starAssignments) => {
+    set({
+      empires,
+      starAssignments,
+      highlightedEmpireId: null,
+      paintEmpireId: null,
+    });
+    persistCampaign(empires, starAssignments);
+  },
+
+  clearCampaign: () => {
+    set({
+      empires: [],
+      starAssignments: {},
+      highlightedEmpireId: null,
+      paintEmpireId: null,
+    });
+    persistCampaign([], {});
+  },
+
+  hydrateCampaignFromStorage: () => {
+    const savedCampaign = loadCampaignFromStorage();
+    if (!savedCampaign) return;
+    set({
+      empires: savedCampaign.empires,
+      starAssignments: savedCampaign.starAssignments,
+    });
+  },
 }));

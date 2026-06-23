@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { ProjectedStar } from '../types';
 import { formatCatalogIds, formatDistanceLy } from '../utils/star-visuals';
+import { getEmpireForStar } from '../utils/empires';
 import { useStarMapStore } from '../state/useStarMapStore';
 import { findNearestStarsWithDistances } from '../math/nearest-neighbors';
 import { TravelPanel } from './TravelPanel';
@@ -132,6 +133,11 @@ function SelectedStarDetails({
   catalogLimited: boolean;
 }) {
   const { star, trueDistanceLy, horizontalDistanceLy, heightLy } = projected;
+  const empires = useStarMapStore((s) => s.empires);
+  const starAssignments = useStarMapStore((s) => s.starAssignments);
+  const assignStarToEmpire = useStarMapStore((s) => s.assignStarToEmpire);
+  const setEmpireCapital = useStarMapStore((s) => s.setEmpireCapital);
+  const assignedEmpire = getEmpireForStar(star.id, starAssignments, empires);
   const stretch =
     horizontalDistanceLy > 1e-6 ? trueDistanceLy / horizontalDistanceLy : undefined;
 
@@ -185,7 +191,69 @@ function SelectedStarDetails({
             <dd className="text-[10px]">{formatCatalogIds(star.catalogIds)}</dd>
           </>
         )}
+        {assignedEmpire && (
+          <>
+            <dt className="text-slate-400">Empire</dt>
+            <dd className="flex items-center gap-1.5">
+              <span
+                className="inline-block h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: assignedEmpire.color }}
+              />
+              {assignedEmpire.name}
+            </dd>
+          </>
+        )}
       </dl>
+
+      {empires.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {empires.map((empire) => (
+            <button
+              key={empire.id}
+              type="button"
+              onClick={() => assignStarToEmpire(star.id, empire.id)}
+              className={`rounded px-2 py-1 text-[11px] border ${
+                assignedEmpire?.id === empire.id
+                  ? 'border-white/40 text-white'
+                  : 'border-slate-600 text-slate-300 hover:border-slate-500'
+              }`}
+              style={{
+                backgroundColor:
+                  assignedEmpire?.id === empire.id ? `${empire.color}55` : `${empire.color}22`,
+              }}
+            >
+              {empire.name}
+            </button>
+          ))}
+          {assignedEmpire && (
+            <button
+              type="button"
+              onClick={() => assignStarToEmpire(star.id, null)}
+              className="rounded border border-slate-600 px-2 py-1 text-[11px] text-slate-400 hover:border-slate-500"
+            >
+              Unassign
+            </button>
+          )}
+          {assignedEmpire && (
+            <button
+              type="button"
+              onClick={() => setEmpireCapital(assignedEmpire.id, star.id)}
+              className="rounded border border-amber-700/50 bg-amber-950/40 px-2 py-1 text-[11px] text-amber-200 hover:border-amber-600"
+            >
+              {assignedEmpire.capitalStarId === star.id ? 'Capital system' : 'Set as capital'}
+            </button>
+          )}
+          {assignedEmpire && assignedEmpire.capitalStarId === star.id && (
+            <button
+              type="button"
+              onClick={() => setEmpireCapital(assignedEmpire.id, null)}
+              className="rounded border border-slate-600 px-2 py-1 text-[11px] text-slate-400 hover:border-slate-500"
+            >
+              Clear capital
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {star.id !== focusStar.id && (

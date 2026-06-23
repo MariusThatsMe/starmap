@@ -51,6 +51,13 @@ export type PendingFocusTransition = {
   kind: FocusTransitionKind;
 };
 
+export type Empire = {
+  id: string;
+  name: string;
+  color: string;
+  capitalStarId?: string;
+};
+
 export type DisplayToggles = {
   showRealStars: boolean;
   showProjectedPoints: boolean;
@@ -62,4 +69,9 @@ export type DisplayToggles = {
   showLineToSol: boolean;
   showAllStarNames: boolean;
   showGalacticArrows: boolean;
+  showPoliticalLayer: boolean;
+  showEmpireLabels: boolean;
+  showEmpireBorders: boolean;
+  showEmpireInternalLines: boolean;
+  showEmpireLegend: boolean;
 };

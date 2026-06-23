@@ -103,6 +103,12 @@ export function ControlsPanel() {
             onChange={(v) => setToggle('showHoverNearestLines', v)}
             hint="Amber: focus · Cyan: hover or selected when idle"
           />
+          <ToggleRow
+            label="Political layer"
+            checked={toggles.showPoliticalLayer}
+            onChange={(v) => setToggle('showPoliticalLayer', v)}
+            hint="Empire colors on assigned stars (manage in Empires panel)"
+          />
         </div>
       </section>
 
