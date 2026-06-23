@@ -19,6 +19,7 @@ function App() {
 
   const selectedProjected =
     projectedStars.find((p) => p.star.id === selectedStarId) ?? null;
+  const showPoliticalLayer = useStarMapStore((s) => s.toggles.showPoliticalLayer);
 
   return (
     <div className="flex h-screen flex-col bg-slate-950 text-slate-200">
@@ -42,7 +43,7 @@ function App() {
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-72 shrink-0 overflow-y-auto border-r border-slate-800 p-3 lg:block space-y-3">
           <ControlsPanel />
-          <EmpiresPanel />
+          {showPoliticalLayer && <EmpiresPanel />}
         </aside>
 
         <main className="relative z-0 min-w-0 flex-1">
@@ -61,12 +62,14 @@ function App() {
             <ControlsPanel />
           </div>
         </details>
-        <details className="mb-2">
-          <summary className="cursor-pointer text-sm text-slate-300">Empires</summary>
-          <div className="mt-2">
-            <EmpiresPanel />
-          </div>
-        </details>
+        {showPoliticalLayer && (
+          <details className="mb-2">
+            <summary className="cursor-pointer text-sm text-slate-300">Empires</summary>
+            <div className="mt-2">
+              <EmpiresPanel />
+            </div>
+          </details>
+        )}
         <FocusPanel projected={selectedProjected} />
       </div>
     </div>
