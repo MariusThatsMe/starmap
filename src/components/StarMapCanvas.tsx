@@ -203,7 +203,13 @@ function SceneContent() {
         />
 
         {shouldShowLabel(focusStar.id) && (
-          <StarLabel star={focusStar} position={toThreePosition(focusStar.positionLy)} />
+          <StarLabel
+            star={focusStar}
+            position={toThreePosition(focusStar.positionLy)}
+            isSelected={selectedStarId === focusStar.id}
+            isHovered={hoveredStarId === focusStar.id}
+            {...focusHandlers}
+          />
         )}
 
         <NeighborLines
@@ -229,7 +235,13 @@ function SceneContent() {
               {...handleStarInteraction('sol')}
             />
             {shouldShowLabel('sol') && (
-              <StarLabel star={solStar} position={toThreePosition(solStar.positionLy)} />
+              <StarLabel
+                star={solStar}
+                position={toThreePosition(solStar.positionLy)}
+                isSelected={selectedStarId === 'sol'}
+                isHovered={hoveredStarId === 'sol'}
+                {...handleStarInteraction('sol')}
+              />
             )}
           </>
         )}
@@ -279,7 +291,15 @@ function SceneContent() {
                 />
               )}
 
-              {shouldShowLabel(id) && <StarLabel star={p.star} position={real} />}
+              {shouldShowLabel(id) && (
+                <StarLabel
+                  star={p.star}
+                  position={real}
+                  isSelected={isSelected}
+                  isHovered={isHovered}
+                  {...handlers}
+                />
+              )}
             </group>
           );
         })}
