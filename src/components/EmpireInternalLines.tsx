@@ -16,10 +16,12 @@ export function EmpireInternalLines() {
   const segments = useMemo(() => {
     if (!toggles.showPoliticalLayer || !toggles.showEmpireInternalLines) return [];
     const stars = projectedStarsIncludingFocus(projectedStars, focusStar);
-    return computeEmpireInternalSegments(stars, starAssignments, empireBorderMaxLy);
+    const maxDistanceLy = toggles.empireInternalLinksUnlimited ? Infinity : empireBorderMaxLy;
+    return computeEmpireInternalSegments(stars, starAssignments, maxDistanceLy);
   }, [
     toggles.showPoliticalLayer,
     toggles.showEmpireInternalLines,
+    toggles.empireInternalLinksUnlimited,
     projectedStars,
     focusStar,
     starAssignments,

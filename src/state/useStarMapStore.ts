@@ -172,6 +172,7 @@ function initState() {
       showEmpireLabels: true,
       showEmpireBorders: true,
       showEmpireInternalLines: true,
+      empireInternalLinksUnlimited: false,
       showEmpireLegend: true,
     },
     viewPreset: 'oblique' as ViewPreset,

@@ -112,8 +112,17 @@ export function EmpiresPanel() {
                 label="Empire links"
                 checked={toggles.showEmpireInternalLines}
                 onChange={(v) => setToggle('showEmpireInternalLines', v)}
-                hint="Dashed 3D lines between same-empire neighbors"
+                hint="Dashed 3D lines between same-empire systems"
               />
+              {toggles.showEmpireInternalLines && (
+                <ToggleRow
+                  label="All distances"
+                  checked={toggles.empireInternalLinksUnlimited}
+                  onChange={(v) => setToggle('empireInternalLinksUnlimited', v)}
+                  hint="Link every visible same-empire pair; off uses border distance"
+                  className="ml-5"
+                />
+              )}
               <ToggleRow
                 label="Empire labels"
                 checked={toggles.showEmpireLabels}
@@ -481,14 +490,16 @@ function ToggleRow({
   checked,
   onChange,
   hint,
+  className,
 }: {
   label: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   hint?: string;
+  className?: string;
 }) {
   return (
-    <label className="flex items-start gap-2 cursor-pointer">
+    <label className={`flex items-start gap-2 cursor-pointer${className ? ` ${className}` : ''}`}>
       <input
         type="checkbox"
         checked={checked}
