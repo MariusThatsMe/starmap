@@ -10,7 +10,7 @@ Most flat star maps treat height above or below the chart plane as something to 
 
 This viewer uses a **range-preserving projection**: each star’s position on the flat chart is placed at the same radial distance from the focus star as its true 3D distance. Curved **elevation arcs** connect the real star to its chart position, so you can see how “height” is folded onto the plane.
 
-By default the map is centered on **Sol**, showing the nearest stars from a catalog of everything within 25 parsecs (~3,000 stars). You can click any star and **focus** the map on it to explore its neighborhood.
+By default the map is centered on **Sol**, showing the nearest stars from a catalog of everything within 25 parsecs (~5,700 stars). You can click any star and **focus** the map on it to explore its neighborhood.
 
 ## Features
 
@@ -52,12 +52,19 @@ Routes and reach calculations use only stars in the loaded catalog.
 
 ## Data
 
-Star positions come from the [HYG database](https://www.astronexus.com/projects/hyg) (v4.2), converted from parsecs to light-years. The bundled catalog includes all HYG stars within 25 pc of Sol.
+Star positions come from the [Fifth Catalogue of Nearby Stars (CNS5)](https://dc.g-vo.org/CNS5) — a volume-complete 25 pc sample based on Gaia astrometry — cross-matched with the [HYG database](https://www.astronexus.com/projects/hyg) (v4.2) for proper names, Bayer/Flamsteed designations, and spectral types. Positions are computed from CNS5 right ascension, declination, and parallax, then converted to light-years.
 
-To regenerate the catalog from a HYG CSV:
+To regenerate `src/data/stars.json`, download the source files into `scripts/data/`:
+
+1. **CNS5** — either the [CNS5-updated CSV](https://dc.g-vo.org/cns5update/q/cone/form) (preferred) or the [CNS5 `.dat` file](https://cdsarc.cds.unistra.fr/ftp/cats/J/A+A/670/A19/cns5.dat) from CDS
+2. **HYG v4.2** — `hyg_v42.csv.gz` from [Codeberg](https://codeberg.org/astronexus/hyg) (Git LFS)
+
+Then run:
 
 ```bash
-npm run generate-catalog -- /path/to/hyg_v42.csv
+npm run generate-catalog
+# or with explicit paths:
+npm run generate-catalog -- --cns5 scripts/data/cns5.dat --hyg scripts/data/hyg_v42.csv.gz
 ```
 
 ## Running locally

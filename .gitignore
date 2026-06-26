@@ -23,3 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 src/data/campaigns/2300ad.json
+
+# Downloaded catalog source files (regenerate stars.json via npm run generate-catalog)
+scripts/data/*.csv
+scripts/data/*.csv.gz
+scripts/data/*.dat
+scripts/data/*.dat.gz
+scripts/data/*.zip
+!scripts/data/.gitkeep
