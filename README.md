@@ -22,6 +22,33 @@ By default the map is centered on **Sol**, showing the nearest stars from a cata
 - **Hover neighbor lines** — optional lines to the N nearest stars with distance labels
 - **Comparison mode** — optional straight drop-lines to show why conventional footprints mislead
 - **Display toggles** — labels, Sol highlight, neighbor limits, range filters, camera presets
+- **Empires** — group stars into factions with territories, borders, and capitals; export/import campaign data
+- **Travel** — plan shortest hop-by-hop routes and simulate how far you can reach within a hop budget
+
+## Empires & travel
+
+These tools are aimed at tabletop campaigns, fiction mapping, and scenario planning on top of the real star catalog.
+
+### Empires
+
+Create named factions and assign star systems to them. Assign stars by selecting one and picking an empire, by **paint mode** (click to assign, shift+click to unassign), or from the focus panel. Each empire has a color, an optional **capital** system, and a list of claimed stars.
+
+Turn on the **political layer** to recolor assigned stars and show:
+
+- **Territory fill** — semi-transparent regions on the chart plane
+- **Empire links** — dashed lines between systems in the same faction (optionally on the 2D chart plane or in true 3D)
+- **Empire borders** — dashed lines between rival systems within a configurable distance
+- **Empire labels** and a map legend
+
+Campaign data (empires and star assignments) is saved automatically in your browser. You can **export** or **import** it as JSON, or **export the chart as SVG** with territories, borders, and any active travel route.
+
+### Travel
+
+**Route planning** — with a focus star and a selected destination, plan the shortest hop-by-hop path through the catalog. Set a **max hop distance** (light-years); only star pairs within that range count as a single jump. The route is drawn on the map with per-leg distances, total travel distance, and straight-line distance for comparison.
+
+**Travel reach** — from the focus system, simulate which stars are reachable within a **max hop distance** and **hop budget** (1–6 hops). Results are grouped by hop count. If you have empires set up, you can claim all unassigned reachable systems to a faction in one step.
+
+Routes and reach calculations use only stars in the loaded catalog.
 
 ## Data
 
